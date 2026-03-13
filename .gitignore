@@ -7,3 +7,6 @@ __pycache__/
 allure-results/
 reports/
 extract.yaml
+common/Logs/
+test_data/temp/*
+!test_data/temp/.gitkeep
