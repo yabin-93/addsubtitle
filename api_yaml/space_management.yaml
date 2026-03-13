@@ -1,0 +1,45 @@
+# 获取导出视频素材列表
+get_export_video_list:
+  api: /api/asset/original-video
+  method: get
+  params:
+      pageIndex: $pageIndex
+      pageSize: $pageSize
+      type: $type
+  headers:
+        Content-Type: "application/json"
+        Cookie: $cookie
+
+# 获取上传视频素材列表
+get_upload_video_material_list:
+  api: /api/asset/original-video
+  method: get
+  params:
+    pageIndex: $pageIndex
+    pageSize: $pageSize
+    type: $type
+  headers:
+    Content-Type: "application/json"
+    Cookie: $cookie
+
+# 获取用户克隆的音频素材列表
+get_user_clone_voice_list:
+  api: /api/voice/user-clone
+  method: get
+  params:
+    pageIndex: $pageIndex
+    pageSize: $pageSize
+  headers:
+    Content-Type: "application/json"
+    Cookie: $cookie
+
+# 获取AI音频列表
+get_user_voice_list:
+  api: /api/voice/ai
+  method: get
+  params:
+    pageIndex: $pageIndex
+    pageSize: $pageSize
+  headers:
+    Content-Type: "application/json"
+    Cookie: $cookie

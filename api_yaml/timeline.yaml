@@ -1,0 +1,9 @@
+update_video:
+  api: /api/project/$project_id/updateVideo
+  method: post
+  json:
+    sessionId: $session_id
+    list: $video_list
+  headers:
+    Content-Type: "application/json"
+    Cookie: $cookie

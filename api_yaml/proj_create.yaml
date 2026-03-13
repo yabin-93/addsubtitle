@@ -1,0 +1,117 @@
+pre_create_project:
+  api: /api/project/preCreate
+  method: post
+  json:
+    duration: $duration
+    assetSize: $asset_size
+    device: $device
+    usage: $usage
+    deviceType: $device_type
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie
+
+event_conform:
+  api: /api/internal/event_conform
+  method: post
+  json:
+    eventType: $event_type
+    message: $message
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie
+
+event_conform_with_project:
+  api: /api/internal/event_conform
+  method: post
+  json:
+    eventType: $event_type
+    message: $message
+    projectId: $project_id
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie
+
+create_project:
+  api: /api/project/create
+  method: post
+  json:
+    name: $name
+    type: $project_type
+    usage: $usage
+    language: $language
+    translationLanguage: $translation_language
+    peopleNumber: $people_number
+    lipSync: $lip_sync
+    generateSpeech: $generate_speech
+    useTranslate: $use_translate
+    mode: $mode
+    tempId: $temp_id
+    projectId: $project_id
+    languageCode: $language_code
+    translationLanguageCode: $translation_language_code
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie
+
+create_translation_upload_task:
+  api: /api/upload/task-translation
+  method: post
+  json:
+    ext: $ext
+    assetSize: $asset_size
+    parts: $parts
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie
+
+get_project_detail:
+  api: /api/project/$project_id/detail
+  method: get
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie
+
+get_project_status:
+  api: /api/project/$project_id/status
+  method: get
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie
+
+get_project_source:
+  api: /api/project/$project_id/source
+  method: get
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie
+
+get_project_speaker_info:
+  api: /api/project/$project_id/getSpeakerInfo
+  method: get
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie
+
+get_project_subtitle:
+  api: /api/project/$project_id/subtitle
+  method: get
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie
+
+get_project_style:
+  api: /api/project/$project_id/getStyle
+  method: get
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie
+
+update_char_num:
+  api: /api/project/$project_id/updateCharNum
+  method: get
+  params:
+    charNum: $char_num
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie

@@ -1,0 +1,8 @@
+update_project_name:
+  api: /api/project/$project_id/name
+  method: post
+  json:
+    projectName: $name
+  headers:
+    Content-Type: "application/json"
+    Cookie: $cookie

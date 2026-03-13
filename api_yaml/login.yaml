@@ -1,0 +1,21 @@
+get_code:
+  api: /api/auth/email-verification-code
+  method: post
+  json:
+      email: $email
+      language: "en"
+  headers:
+        Content-Type: "application/json"
+
+
+acc_pwd_login:
+  api: "/api/auth/newLogin"
+  method: post
+  json :
+    email: 1020817070@qq.com
+    captchaCode: $code
+    recall: null
+    language: English
+    invitationCode: null
+  headers:
+        Content-Type: application/json

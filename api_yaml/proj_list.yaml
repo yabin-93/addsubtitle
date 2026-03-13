@@ -1,0 +1,9 @@
+get_proj_list:
+  api: /api/project
+  method: get
+  params:
+      pageIndex: $pageIndex
+      pageSize: $pageSize
+  headers:
+        Content-Type: "application/json"
+        Cookie: $cookie

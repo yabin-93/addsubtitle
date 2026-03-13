@@ -1,0 +1,69 @@
+get_project_subtitle:
+  api: /api/project/$project_id/subtitle
+  method: get
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie
+
+update_subtitle_show:
+  api: /api/project/$project_id/updateSubtitleShow
+  method: post
+  json:
+    subtitleShowEnum: $subtitle_show_enum
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie
+
+batch_edit_subtitle:
+  api: /api/project/$project_id/batchEditSubtitle
+  method: post
+  json:
+    sessionId: $session_id
+    list: $subtitle_list
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie
+
+add_new_subtitle:
+  api: /api/project/$project_id/addNewSubtitle
+  method: post
+  json:
+    sessionId: $session_id
+    subtitleArrId: $subtitle_arr_id
+    startTime: $start_time
+    speechId: $speech_id
+    preSubtitleArrId: $pre_subtitle_arr_id
+    oriSegments: $ori_segments
+    transSegments: $trans_segments
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie
+
+subtitle_batch_translate:
+  api: /api/project/$project_id/subtitleBatchTranslate
+  method: post
+  json:
+    sessionId: $session_id
+    arrIds: $arr_ids
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie
+
+get_subtitle_by_arr_ids:
+  api: /api/project/$project_id/getSubtitleByArrIds
+  method: post
+  json:
+    arrIds: $arr_ids
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie
+
+delete_subtitle:
+  api: /api/project/$project_id/delSubtitle
+  method: post
+  json:
+    sessionId: $session_id
+    subtitleArrId: $subtitle_arr_id
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie
