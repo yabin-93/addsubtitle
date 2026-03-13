@@ -1,7 +1,7 @@
 import allure
 import pytest
 
-from api_moudle.proj_create import ProjCreate
+from api_moudle.project.add_subtitle.add_subtitle_create import ProjCreate
 
 
 @allure.epic("addSubtitle")

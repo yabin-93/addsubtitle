@@ -1,6 +1,6 @@
-import time
+﻿import time
 
-from api_moudle.base_api import BaseApi
+from api_moudle.project.home.base_api import BaseApi
 from common.logger import logger
 
 
@@ -11,7 +11,7 @@ class ProjList(BaseApi):
             last_response = None
             for attempt in range(1, 4):
                 response = self.run_authed_request(
-                    "proj_list.yaml",
+                    "project/home/proj_list.yaml",
                     "get_proj_list",
                     cookie=cookie,
                     pageIndex=pageIndex,

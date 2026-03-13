@@ -1,10 +1,10 @@
-from api_moudle.base_api import BaseApi
+from api_moudle.project.home.base_api import BaseApi
 
 
 class SpaceManagement(BaseApi):
     def __init__(self):
         super().__init__()
-        self.yaml_path = "space_management.yaml"
+        self.yaml_path = "project/space/space_management.yaml"
 
     def get_export_video_list(self, cookie=None, pageIndex=0, pageSize=12, type=3):
         return self.run_authed_request(

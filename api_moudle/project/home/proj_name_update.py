@@ -1,4 +1,4 @@
-from api_moudle.base_api import BaseApi
+from api_moudle.project.home.base_api import BaseApi
 from common.logger import logger
 
 
@@ -6,7 +6,7 @@ class ProjUpdate(BaseApi):
     def update_project_name(self, project_id, name, cookie=None):
         try:
             return self.run_authed_request(
-                "home_proj_update.yaml",
+                "project/home/proj_name_update.yaml",
                 "update_project_name",
                 cookie=cookie,
                 project_id=project_id,
@@ -18,7 +18,7 @@ class ProjUpdate(BaseApi):
 
 
 if __name__ == "__main__":
-    from api_moudle.proj_list import ProjList
+    from api_moudle.project.home.proj_list import ProjList
 
     status_code, data = ProjList().get_proj_list()
     if status_code == 200 and data["data"]["rows"]:

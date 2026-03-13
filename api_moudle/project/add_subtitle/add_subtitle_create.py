@@ -5,7 +5,7 @@ import time
 
 import requests
 
-from api_moudle.base_api import BaseApi
+from api_moudle.project.home.base_api import BaseApi
 from common.auth_util import get_cookie
 from common.logger import logger
 from common.test_data_paths import (
@@ -229,7 +229,7 @@ class ProjCreate(BaseApi):
     def create_translation_upload_task(self, file_path=None, cookie=None, part_size=None, category="video"):
         file_path = self.resolve_upload_path(category, file_path=file_path)
         return self.run_authed_request(
-            "proj_create.yaml",
+            "project/add_subtitle/add_subtitle_create.yaml",
             "create_translation_upload_task",
             cookie=cookie,
             ext=file_path.name,
@@ -569,7 +569,7 @@ class ProjCreate(BaseApi):
     ):
         try:
             return self.run_authed_request(
-                "proj_create.yaml",
+                "project/add_subtitle/add_subtitle_create.yaml",
                 "pre_create_project",
                 cookie=cookie,
                 duration=duration,
@@ -588,7 +588,12 @@ class ProjCreate(BaseApi):
             kwargs = {"event_type": event_type, "message": message}
             if project_id is not None:
                 kwargs["project_id"] = project_id
-            return self.run_authed_request("proj_create.yaml", api_name, cookie=cookie, **kwargs)
+            return self.run_authed_request(
+                "project/add_subtitle/add_subtitle_create.yaml",
+                api_name,
+                cookie=cookie,
+                **kwargs,
+            )
         except Exception as e:
             logger.error(f"conform_event failed: {e}")
             return [None, {"error": "conform_event_failed", "message": str(e)}]
@@ -613,7 +618,7 @@ class ProjCreate(BaseApi):
     ):
         try:
             return self.run_authed_request(
-                "proj_create.yaml",
+                "project/add_subtitle/add_subtitle_create.yaml",
                 "create_project",
                 cookie=cookie,
                 name=name,
@@ -637,7 +642,7 @@ class ProjCreate(BaseApi):
 
     def get_project_detail(self, project_id, cookie=None):
         return self.run_authed_request(
-            "proj_create.yaml",
+            "project/add_subtitle/add_subtitle_create.yaml",
             "get_project_detail",
             cookie=cookie,
             project_id=project_id,
@@ -645,7 +650,7 @@ class ProjCreate(BaseApi):
 
     def get_project_status(self, project_id, cookie=None):
         return self.run_authed_request(
-            "proj_create.yaml",
+            "project/add_subtitle/add_subtitle_create.yaml",
             "get_project_status",
             cookie=cookie,
             project_id=project_id,
@@ -653,7 +658,7 @@ class ProjCreate(BaseApi):
 
     def get_project_source(self, project_id, cookie=None):
         return self.run_authed_request(
-            "proj_create.yaml",
+            "project/add_subtitle/add_subtitle_create.yaml",
             "get_project_source",
             cookie=cookie,
             project_id=project_id,
@@ -661,7 +666,7 @@ class ProjCreate(BaseApi):
 
     def get_project_speaker_info(self, project_id, cookie=None):
         return self.run_authed_request(
-            "proj_create.yaml",
+            "project/add_subtitle/add_subtitle_create.yaml",
             "get_project_speaker_info",
             cookie=cookie,
             project_id=project_id,
@@ -669,7 +674,7 @@ class ProjCreate(BaseApi):
 
     def get_project_subtitle(self, project_id, cookie=None):
         return self.run_authed_request(
-            "proj_create.yaml",
+            "project/add_subtitle/add_subtitle_create.yaml",
             "get_project_subtitle",
             cookie=cookie,
             project_id=project_id,
@@ -677,7 +682,7 @@ class ProjCreate(BaseApi):
 
     def get_project_style(self, project_id, cookie=None):
         return self.run_authed_request(
-            "proj_create.yaml",
+            "project/add_subtitle/add_subtitle_create.yaml",
             "get_project_style",
             cookie=cookie,
             project_id=project_id,
@@ -685,7 +690,7 @@ class ProjCreate(BaseApi):
 
     def update_char_num(self, project_id, char_num=60, cookie=None):
         return self.run_authed_request(
-            "proj_create.yaml",
+            "project/add_subtitle/add_subtitle_create.yaml",
             "update_char_num",
             cookie=cookie,
             project_id=project_id,
@@ -781,4 +786,3 @@ if __name__ == "__main__":
     api = ProjCreate()
     status_code, data = api.create_project_flow(f"Codex Create {int(time.time())}")
     print(status_code, data)
-

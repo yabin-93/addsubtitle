@@ -1,9 +1,9 @@
-import random
+﻿import random
 
 import allure
 import pytest
 
-from api_moudle.login import Login
+from api_moudle.auth.login import Login
 from common.yaml_util import read_yaml, write_yaml
 
 

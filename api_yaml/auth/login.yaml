@@ -16,6 +16,5 @@ acc_pwd_login:
     captchaCode: $code
     recall: null
     language: English
-    invitationCode: null
   headers:
         Content-Type: application/json

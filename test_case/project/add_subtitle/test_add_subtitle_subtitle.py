@@ -1,11 +1,11 @@
-import copy
+﻿import copy
 
 import allure
 import pytest
 
-from api_moudle.proj_create import ProjCreate
-from api_moudle.proj_list import ProjList
-from api_moudle.proj_subtitle import ProjSubtitle
+from api_moudle.project.add_subtitle.add_subtitle_create import ProjCreate
+from api_moudle.project.home.proj_list import ProjList
+from api_moudle.project.add_subtitle.add_subtitle_subtitle import ProjSubtitle
 from common.yaml_util import read_yaml, write_yaml
 
 

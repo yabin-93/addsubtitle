@@ -1,7 +1,7 @@
 import time
 
-from api_moudle.base_api import BaseApi
-from api_moudle.proj_create import ProjCreate
+from api_moudle.project.home.base_api import BaseApi
+from api_moudle.project.add_subtitle.add_subtitle_create import ProjCreate
 from common.logger import logger
 from common.yaml_util import read_yaml, write_yaml
 
@@ -176,7 +176,7 @@ class ProjSubtitle(BaseApi):
     def get_project_subtitle(self, project_id, cookie=None):
         try:
             return self.run_authed_request(
-                "proj_subtitle.yaml",
+                "project/add_subtitle/add_subtitle_subtitle.yaml",
                 "get_project_subtitle",
                 cookie=cookie,
                 project_id=project_id,
@@ -188,7 +188,7 @@ class ProjSubtitle(BaseApi):
     def get_subtitle_by_arr_ids(self, project_id, arr_ids, cookie=None):
         try:
             return self.run_authed_request(
-                "proj_subtitle.yaml",
+                "project/add_subtitle/add_subtitle_subtitle.yaml",
                 "get_subtitle_by_arr_ids",
                 cookie=cookie,
                 project_id=project_id,
@@ -235,7 +235,7 @@ class ProjSubtitle(BaseApi):
                     ]
 
             return self.run_authed_request(
-                "proj_subtitle.yaml",
+                "project/add_subtitle/add_subtitle_subtitle.yaml",
                 "batch_edit_subtitle",
                 cookie=cookie,
                 project_id=project_id,
@@ -275,7 +275,7 @@ class ProjSubtitle(BaseApi):
                     ]
 
             return self.run_authed_request(
-                "proj_subtitle.yaml",
+                "project/add_subtitle/add_subtitle_subtitle.yaml",
                 "add_new_subtitle",
                 cookie=cookie,
                 project_id=project_id,
@@ -309,7 +309,7 @@ class ProjSubtitle(BaseApi):
                     ]
 
             return self.run_authed_request(
-                "proj_subtitle.yaml",
+                "project/add_subtitle/add_subtitle_subtitle.yaml",
                 "subtitle_batch_translate",
                 cookie=cookie,
                 project_id=project_id,
@@ -338,7 +338,7 @@ class ProjSubtitle(BaseApi):
                     ]
 
             return self.run_authed_request(
-                "proj_subtitle.yaml",
+                "project/add_subtitle/add_subtitle_subtitle.yaml",
                 "delete_subtitle",
                 cookie=cookie,
                 project_id=project_id,
@@ -353,7 +353,7 @@ class ProjSubtitle(BaseApi):
         api_subtitle_show_enum = self.normalize_subtitle_show_enum(subtitle_show_enum)
         try:
             return self.run_authed_request(
-                "proj_subtitle.yaml",
+                "project/add_subtitle/add_subtitle_subtitle.yaml",
                 "update_subtitle_show",
                 cookie=cookie,
                 project_id=project_id,

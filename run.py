@@ -6,13 +6,13 @@ import pytest
 
 REGRESSION_MARK_EXPRESSION = "P0"
 ORDERED_TEST_FILES = [
-    "test_case/test_login.py",
-    "test_case/test_proj_create.py",
-    "test_case/test_home_proj_update.py",
-    "test_case/test_proj_list.py",
-    "test_case/test_timeline.py",
-    "test_case/test_proj_subtitle.py",
-    "test_case/test_space_management.py",
+    "test_case/auth/test_login.py",
+    "test_case/project/add_subtitle/test_add_subtitle_create.py",
+    "test_case/project/home/test_proj_name_update.py",
+    "test_case/project/home/test_proj_list.py",
+    "test_case/project/add_subtitle/test_add_subtitle_timeline.py",
+    "test_case/project/add_subtitle/test_add_subtitle_subtitle.py",
+    "test_case/project/space/test_space_management.py",
 ]
 
 

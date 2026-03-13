@@ -4,13 +4,13 @@ import time
 import allure
 import pytest
 
-from api_moudle.home_proj_update import ProjUpdate
-from api_moudle.proj_list import ProjList
+from api_moudle.project.home.proj_name_update import ProjUpdate
+from api_moudle.project.home.proj_list import ProjList
 from common.yaml_util import read_yaml, write_yaml
 
 
 @allure.epic("addSubtitle")
-class TestHomeProjUpdate:
+class TestProjNameUpdate:
     @staticmethod
     def _get_target_project_id():
         for key in ("uploaded_video_project_id", "created_project_id", "test_project_id"):
@@ -19,7 +19,7 @@ class TestHomeProjUpdate:
                 write_yaml({"test_project_id": project_id})
                 return project_id
 
-        pytest.skip("未找到 test_proj_create.py 创建的项目 id，请按回归顺序执行用例")
+        pytest.skip("未找到 test_add_subtitle_create.py 创建的项目 id，请按回归顺序执行用例")
 
     @staticmethod
     def _wait_for_project_name(project_id, expected_name, timeout=30, interval=2):

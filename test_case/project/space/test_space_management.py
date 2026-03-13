@@ -3,7 +3,7 @@ import time
 import allure
 import pytest
 
-from api_moudle.space_management import SpaceManagement
+from api_moudle.project.space.space_management import SpaceManagement
 
 
 @allure.epic("addSubtitle")

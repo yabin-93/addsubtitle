@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 from string import Template
 
 import requests
@@ -59,7 +60,8 @@ class BaseApi:
         return resp
 
     def run_request(self, yaml_path, api_name, **kwargs):
-        project_path = os.path.dirname(os.path.dirname(__file__)) + "/api_yaml/" + yaml_path
+        project_root = Path(__file__).resolve().parents[3]
+        project_path = str(project_root / "api_yaml" / yaml_path)
         logger.info(f"Load YAML config: {project_path}, api_name: {api_name}")
         logger.debug(f"Runtime args: {kwargs}")
 
@@ -92,4 +94,4 @@ class BaseApi:
 
 
 if __name__ == "__main__":
-    BaseApi().run_request("login.yaml", "get_code")
+    BaseApi().run_request("auth/login.yaml", "get_code")

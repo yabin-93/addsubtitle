@@ -3,7 +3,7 @@ import time
 import allure
 import pytest
 
-from api_moudle.proj_list import ProjList
+from api_moudle.project.home.proj_list import ProjList
 
 
 @allure.epic("addSubtitle")

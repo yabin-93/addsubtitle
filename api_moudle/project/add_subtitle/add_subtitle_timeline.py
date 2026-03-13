@@ -1,7 +1,7 @@
 import time
 
-from api_moudle.base_api import BaseApi
-from api_moudle.proj_create import ProjCreate
+from api_moudle.project.home.base_api import BaseApi
+from api_moudle.project.add_subtitle.add_subtitle_create import ProjCreate
 from common.logger import logger
 
 
@@ -77,7 +77,7 @@ class Timeline(BaseApi):
                     ]
 
             return self.run_authed_request(
-                "timeline.yaml",
+                "project/add_subtitle/add_subtitle_timeline.yaml",
                 "update_video",
                 cookie=cookie,
                 project_id=project_id,

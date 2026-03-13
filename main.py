@@ -29,6 +29,6 @@
 #
 #
 # if __name__ == '__main__':
-#     yaml_path = r"E:\proj\pythonProject\addSubtitle\api_yaml\login.yaml"
+#     yaml_path = r"E:\proj\pythonProject\addSubtitle\api_yaml\auth\login.yaml"
 #     api_name = "acc_pwd_login"
 #     run_request(yaml_path,api_name,code="123456")

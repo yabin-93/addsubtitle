@@ -7,13 +7,13 @@ from common.yaml_util import clear_yaml
 
 REGRESSION_MARK = "P0"
 ORDERED_TEST_FILES = [
-    "test_case/test_login.py",
-    "test_case/test_proj_create.py",
-    "test_case/test_home_proj_update.py",
-    "test_case/test_proj_list.py",
-    "test_case/test_timeline.py",
-    "test_case/test_proj_subtitle.py",
-    "test_case/test_space_management.py",
+    "test_case/auth/test_login.py",
+    "test_case/project/add_subtitle/test_add_subtitle_create.py",
+    "test_case/project/home/test_proj_name_update.py",
+    "test_case/project/home/test_proj_list.py",
+    "test_case/project/add_subtitle/test_add_subtitle_timeline.py",
+    "test_case/project/add_subtitle/test_add_subtitle_subtitle.py",
+    "test_case/project/space/test_space_management.py",
 ]
 ORDERED_TEST_FILE_INDEX = {path: index for index, path in enumerate(ORDERED_TEST_FILES)}
 NON_REGRESSION_SKIP_REASON = "非上线前回归用例，暂时跳过"
@@ -30,11 +30,11 @@ def pytest_addoption(parser):
 
 def pytest_collection_modifyitems(config, items):
     def sort_key(item):
-        item_path = Path(str(item.fspath)).as_posix()
-        relative_path = f"test_case/{Path(item_path).name}"
+        item_path = Path(str(item.fspath)).resolve()
+        relative_path = item_path.relative_to(Path.cwd()).as_posix()
         return (
             ORDERED_TEST_FILE_INDEX.get(relative_path, len(ORDERED_TEST_FILE_INDEX)),
-            item_path,
+            relative_path,
             item.name,
         )
 
@@ -44,8 +44,9 @@ def pytest_collection_modifyitems(config, items):
         return
 
     for item in items:
-        item_path = Path(str(item.fspath)).as_posix()
-        if "/test_case/" not in f"/{item_path}":
+        item_path = Path(str(item.fspath)).resolve()
+        relative_path = item_path.relative_to(Path.cwd()).as_posix()
+        if not relative_path.startswith("test_case/"):
             continue
         if item.get_closest_marker(REGRESSION_MARK):
             continue
