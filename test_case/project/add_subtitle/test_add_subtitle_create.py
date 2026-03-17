@@ -4,9 +4,9 @@ import pytest
 from api_moudle.project.add_subtitle.add_subtitle_create import ProjCreate
 
 
-@allure.epic("addSubtitle")
+@allure.epic("AddSubtitle")
 class TestProjCreate:
-    @allure.feature("项目管理")
+    @allure.feature("加字幕")
     @allure.story("上传项目视频")
     @allure.title("创建项目后上传默认视频")
     @pytest.mark.P0

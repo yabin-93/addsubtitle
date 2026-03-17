@@ -7,7 +7,7 @@ from api_moudle.project.add_subtitle.add_subtitle_timeline import Timeline
 from common.yaml_util import read_yaml, write_yaml
 
 
-@allure.epic("addSubtitle")
+@allure.epic("AddSubtitle")
 class TestTimeline:
     @staticmethod
     def _is_available_timeline_project(project_id):
@@ -48,7 +48,7 @@ class TestTimeline:
         latest_project = max(rows, key=lambda project: int(project["id"]))
         return latest_project["id"]
 
-    @allure.feature("时间轴模块")
+    @allure.feature("加字幕时间轴模块")
     @allure.story("时间轴")
     @allure.title("视频开关功能-正常场景")
     @pytest.mark.P0

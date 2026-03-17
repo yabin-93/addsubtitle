@@ -9,7 +9,7 @@ from api_moudle.project.home.proj_list import ProjList
 from common.yaml_util import read_yaml, write_yaml
 
 
-@allure.epic("addSubtitle")
+@allure.epic("AddSubtitle")
 class TestProjNameUpdate:
     @staticmethod
     def _get_target_project_id():
@@ -45,7 +45,7 @@ class TestProjNameUpdate:
     def setup_class(cls):
         cls.project_id = cls._get_target_project_id()
 
-    @allure.feature("项目管理")
+    @allure.feature("项目首页")
     @allure.story("修改项目名称")
     @allure.title("使用有效参数修改项目名称")
     @pytest.mark.P0
@@ -60,7 +60,7 @@ class TestProjNameUpdate:
         updated_project = self._wait_for_project_name(self.project_id, new_name)
         assert updated_project["name"] == new_name
 
-    @allure.feature("项目管理")
+    @allure.feature("项目首页")
     @allure.story("修改项目名称")
     @allure.title("使用无效项目ID修改项目名称")
     @pytest.mark.P0
@@ -71,7 +71,7 @@ class TestProjNameUpdate:
         assert data.get("success") is False
         assert data["code"] == -33
 
-    @allure.feature("项目管理")
+    @allure.feature("项目首页")
     @allure.story("修改项目名称")
     @allure.title("使用空名称修改项目名称")
     @pytest.mark.skip(reason="非上线前回归用例，暂时跳过")
@@ -80,7 +80,7 @@ class TestProjNameUpdate:
 
         assert status_code == 400 or data.get("success") is False
 
-    @allure.feature("项目管理")
+    @allure.feature("项目首页")
     @allure.story("修改项目名称")
     @allure.title("使用超长名称修改项目名称")
     @pytest.mark.skip(reason="非上线前回归用例，暂时跳过")

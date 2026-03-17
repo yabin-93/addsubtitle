@@ -32,3 +32,10 @@
 #     yaml_path = r"E:\proj\pythonProject\addSubtitle\api_yaml\auth\login.yaml"
 #     api_name = "acc_pwd_login"
 #     run_request(yaml_path,api_name,code="123456")
+from pathlib import Path
+
+
+
+project_root = Path(__file__).resolve().parents[3]
+project_path = Path(__file__).resolve().parent
+print(project_path)

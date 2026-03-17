@@ -9,7 +9,7 @@ from api_moudle.project.add_subtitle.add_subtitle_subtitle import ProjSubtitle
 from common.yaml_util import read_yaml, write_yaml
 
 
-@allure.epic("字幕")
+@allure.epic("AddSubtitle")
 class TestProjSubtitle:
     @staticmethod
     def _has_available_subtitles(project_id):
@@ -66,7 +66,7 @@ class TestProjSubtitle:
             edited_texts[2] = "carefully"
         return edited_texts
 
-    @allure.feature("字幕管理")
+    @allure.feature("加字幕")
     @allure.story("项目字幕接口")
     @allure.title("获取项目字幕-正常场景")
     @pytest.mark.P0
@@ -96,7 +96,7 @@ class TestProjSubtitle:
         assert len(first_ori["segment"]) > 0
         assert len(first_trans["segment"]) > 0
 
-    @allure.feature("字幕管理")
+    @allure.feature("加字幕")
     @allure.story("字幕内容更新")
     @allure.title("批量替换译文字幕")
     @pytest.mark.P0
@@ -171,7 +171,7 @@ class TestProjSubtitle:
             assert reverted_status == 200
             assert reverted_data["success"] is True
 
-    @allure.feature("字幕管理")
+    @allure.feature("加字幕")
     @allure.story("原文编辑后翻译")
     @allure.title("修改原文字幕后触发翻译并获取翻译结果")
     @pytest.mark.P0
@@ -307,7 +307,7 @@ class TestProjSubtitle:
                 assert reverted_translation_status == 200
                 assert reverted_translation_data["success"] is True
 
-    @allure.feature("字幕管理")
+    @allure.feature("加字幕")
     @allure.story("新增原文后翻译")
     @allure.title("新增原文字幕并触发翻译")
     @pytest.mark.P0
@@ -440,7 +440,7 @@ class TestProjSubtitle:
                 assert deleted_status == 200
                 assert deleted_data["success"] is True
 
-    @allure.feature("字幕管理")
+    @allure.feature("加字幕")
     @allure.story("字幕显示切换")
     @allure.title("切换字幕原文、译文、双语和关闭")
     @pytest.mark.P0
@@ -486,7 +486,7 @@ class TestProjSubtitle:
             assert restored_detail_data["success"] is True
             assert restored_detail_data["data"]["subtitleShow"] == 3
 
-    @allure.feature("字幕管理")
+    @allure.feature("加字幕")
     @allure.story("删除字幕")
     @allure.title("删除新增字幕-正常场景")
     @pytest.mark.P0

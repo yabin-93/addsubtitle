@@ -7,7 +7,7 @@ from api_moudle.auth.login import Login
 from common.yaml_util import read_yaml, write_yaml
 
 
-@allure.epic("addSubtitle")
+@allure.epic("AddSubtitle")
 class TestLogin:
     @allure.feature("用户登录")
     @allure.story("获取验证码")
@@ -37,8 +37,8 @@ class TestLogin:
     def test_right_code_login(self):
         code = read_yaml("code")
         status_code, data = Login().acc_pwd_login(code)
-        token = data["data"]["token"]
-        write_yaml({"cookie": f"talecast_token={token}"})
+        # token = data["data"]["token"]
+        # write_yaml({"cookie": f"talecast_token={token}"})
 
         assert status_code == 200
         assert data["msg"] == "success"

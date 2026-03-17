@@ -6,9 +6,9 @@ import pytest
 from api_moudle.project.space.space_management import SpaceManagement
 
 
-@allure.epic("addSubtitle")
+@allure.epic("AddSubtitle")
 class TestSpaceManagement:
-    @allure.feature("空间管理")
+    @allure.feature("空间模块")
     @allure.story("导出视频管理")
     @allure.title("获取导出视频列表")
     @pytest.mark.P0
@@ -20,7 +20,7 @@ class TestSpaceManagement:
         assert data["success"] is True
         assert data["data"]["type"] == 0
 
-    @allure.feature("空间管理")
+    @allure.feature("空间模块")
     @allure.story("视频素材管理")
     @allure.title("获取上传视频素材列表")
     @pytest.mark.P0
@@ -32,7 +32,7 @@ class TestSpaceManagement:
         assert data["success"] is True
         assert data["data"]["type"] == 1
 
-    @allure.feature("空间管理")
+    @allure.feature("空间模块")
     @allure.story("语音管理")
     @allure.title("获取用户克隆语音列表")
     @pytest.mark.P0
@@ -44,7 +44,7 @@ class TestSpaceManagement:
         assert data["success"] is True
         assert data["data"]["type"] == 2
 
-    @allure.feature("空间管理")
+    @allure.feature("空间模块")
     @allure.story("语音管理")
     @allure.title("获取用户语音列表")
     @pytest.mark.P0
@@ -56,7 +56,7 @@ class TestSpaceManagement:
         assert data["success"] is True
         assert data["data"]["type"] == 3
 
-    @allure.feature("空间管理")
+    @allure.feature("空间模块")
     @allure.story("导出视频管理")
     @allure.title("测试导出视频列表分页功能")
     @pytest.mark.skip(reason="非上线前回归用例，暂时跳过")
@@ -71,7 +71,7 @@ class TestSpaceManagement:
         assert "totalRowCount" in data["data"]
         assert "totalPageCount" in data["data"]
 
-    @allure.feature("空间管理")
+    @allure.feature("空间模块")
     @allure.story("性能测试")
     @allure.title("测试空间管理接口响应时间")
     @pytest.mark.P0
@@ -96,7 +96,7 @@ class TestSpaceManagement:
         assert time.time() - start_time < 5.0
         assert status_code == 200
 
-    @allure.feature("空间管理")
+    @allure.feature("空间模块")
     @allure.story("权限验证")
     @allure.title("使用无效Cookie访问空间管理接口")
     @pytest.mark.parametrize("cookie", ["invalid_token", "test_token"])
