@@ -12,7 +12,7 @@ acc_pwd_login:
   api: "/api/auth/newLogin"
   method: post
   json :
-    email: 1020817070@qq.com
+    email: $email
     captchaCode: $code
     recall: null
     language: English

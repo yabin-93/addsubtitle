@@ -1,9 +1,10 @@
-﻿import random
+import random
 
 import allure
 import pytest
 
 from api_moudle.auth.login import Login
+from common.settings import ADD_SUBTITLE_LOGIN_EMAIL
 from common.yaml_util import read_yaml, write_yaml
 
 
@@ -14,7 +15,7 @@ class TestLogin:
     @allure.title("使用正确邮箱获取验证码")
     @pytest.mark.P0
     def test_input_correct_email(self):
-        email = "1020817070@qq.com"
+        email = ADD_SUBTITLE_LOGIN_EMAIL
         status_code, data = Login().get_code(email)
 
         write_yaml({"code": data["data"]["code"]})
@@ -49,6 +50,8 @@ class TestLogin:
     @allure.title("使用错误验证码登录")
     @pytest.mark.P0
     def test_error_code_login(self):
+        email = ADD_SUBTITLE_LOGIN_EMAIL
+        Login().get_code(email)
         status_code, data = Login().acc_pwd_login("000000")
 
         assert status_code == 500

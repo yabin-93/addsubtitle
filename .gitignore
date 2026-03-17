@@ -1,4 +1,5 @@
 .venv39/
+.venv-jenkins/
 .idea/
 .vscode/
 __pycache__/
@@ -6,6 +7,7 @@ __pycache__/
 .pytest_cache/
 allure-results/
 reports/
+junit.xml
 extract.yaml
 common/Logs/
 test_data/temp/*

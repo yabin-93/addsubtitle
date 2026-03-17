@@ -1,11 +1,12 @@
 import requests
 
 from common.logger import logger
+from common.settings import ADD_SUBTITLE_BASE_URL, ADD_SUBTITLE_LOGIN_EMAIL
 from common.yaml_util import read_yaml, write_yaml
 
 
-BASE_URL = "https://staging.addsubtitle.ai"
-DEFAULT_LOGIN_EMAIL = "1020817070@qq.com"
+BASE_URL = ADD_SUBTITLE_BASE_URL
+DEFAULT_LOGIN_EMAIL = ADD_SUBTITLE_LOGIN_EMAIL
 
 
 def _parse_response(response):

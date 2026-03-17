@@ -7,6 +7,7 @@ import yaml
 
 from common.auth_util import get_cookie
 from common.logger import logger
+from common.settings import ADD_SUBTITLE_BASE_URL
 
 
 class BaseApi:
@@ -14,7 +15,7 @@ class BaseApi:
         self.request = requests.session()
 
     def request_api(self, method, api, params=None, data=None, json=None, headers=None):
-        host = "https://staging.addsubtitle.ai"
+        host = ADD_SUBTITLE_BASE_URL
         url_api = host + api
 
         logger.info(f"Start request: {method.upper()} {url_api}")
