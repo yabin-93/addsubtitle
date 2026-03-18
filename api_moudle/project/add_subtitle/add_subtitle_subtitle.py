@@ -27,6 +27,13 @@ class ProjSubtitle(BaseApi):
             raise ValueError(f"subtitle_type 只能是 {sorted(cls.VALID_SUBTITLE_TYPES)} 中的一个")
         return subtitle_type
 
+    @staticmethod
+    def normalize_char_num(char_num):
+        api_char_num = int(char_num)
+        if api_char_num <= 0:
+            raise ValueError("char_num must be greater than 0")
+        return api_char_num
+
     @classmethod
     def get_list_key(cls, subtitle_type):
         return cls.LIST_KEY_BY_TYPE[cls.normalize_subtitle_type(subtitle_type)]
@@ -384,6 +391,39 @@ class ProjSubtitle(BaseApi):
             time.sleep(interval)
 
         return [408, {"stage": "wait_for_subtitle_show_updated", "latest": latest_response}]
+
+    def update_char_num(self, project_id, char_num, cookie=None):
+        api_char_num = self.normalize_char_num(char_num)
+        try:
+            return self.run_authed_request(
+                "project/add_subtitle/add_subtitle_subtitle.yaml",
+                "update_char_num",
+                cookie=cookie,
+                project_id=project_id,
+                char_num=api_char_num,
+            )
+        except Exception as e:
+            logger.error(f"update_char_num failed: {e}")
+            return [None, {"error": "update_char_num_failed", "message": str(e)}]
+
+    def wait_for_char_num_updated(self, project_id, char_num, cookie=None, timeout=30, interval=2):
+        expected_char_num = self.normalize_char_num(char_num)
+        deadline = time.time() + timeout
+        latest_response = None
+        project_create_api = ProjCreate()
+
+        while time.time() < deadline:
+            status_code, data = project_create_api.get_project_detail(project_id, cookie=cookie)
+            latest_response = {"status_code": status_code, "data": data}
+
+            current_char_num = data.get("data", {}).get("charNum") if isinstance(data, dict) else None
+            if status_code == 200 and data.get("success") is True and current_char_num is not None:
+                if self.normalize_char_num(current_char_num) == expected_char_num:
+                    return [200, data]
+
+            time.sleep(interval)
+
+        return [408, {"stage": "wait_for_char_num_updated", "latest": latest_response}]
 
     def wait_for_subtitle_text_updated(
         self,

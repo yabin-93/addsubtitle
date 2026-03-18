@@ -487,6 +487,67 @@ class TestProjSubtitle:
             assert restored_detail_data["data"]["subtitleShow"] == 3
 
     @allure.feature("加字幕")
+    @allure.story("字幕设置")
+    @allure.title("更新项目 CPL 字符数")
+    @pytest.mark.P0
+    def test_update_char_num(self):
+        project_id = self._get_target_project_id()
+        subtitle_api = ProjSubtitle()
+        detail_api = ProjCreate()
+
+        detail_status, detail_data = detail_api.get_project_detail(project_id)
+        assert detail_status == 200
+        assert detail_data["success"] is True
+
+        detail_payload = detail_data.get("data", {})
+        detail_has_char_num = detail_payload.get("charNum") is not None
+        # Backend may omit charNum from project detail; fall back to the product default for restore.
+        original_char_num = subtitle_api.normalize_char_num(detail_payload.get("charNum", 60))
+        target_char_num = 99 if original_char_num != 99 else 60
+
+        try:
+            status_code, data = subtitle_api.update_char_num(project_id, target_char_num)
+            assert status_code == 200
+            assert data["success"] is True
+            assert data["code"] == 0
+
+            if detail_has_char_num:
+                updated_status, updated_data = subtitle_api.wait_for_char_num_updated(
+                    project_id,
+                    target_char_num,
+                    timeout=30,
+                    interval=2,
+                )
+                assert updated_status == 200
+                assert updated_data["success"] is True
+                assert subtitle_api.normalize_char_num(updated_data["data"]["charNum"]) == target_char_num
+            else:
+                latest_detail_status, latest_detail_data = detail_api.get_project_detail(project_id)
+                assert latest_detail_status == 200
+                assert latest_detail_data["success"] is True
+        finally:
+            if original_char_num != target_char_num:
+                restore_status, restore_data = subtitle_api.update_char_num(project_id, original_char_num)
+                assert restore_status == 200
+                assert restore_data["success"] is True
+                assert restore_data["code"] == 0
+
+                if detail_has_char_num:
+                    restored_status, restored_data = subtitle_api.wait_for_char_num_updated(
+                        project_id,
+                        original_char_num,
+                        timeout=30,
+                        interval=2,
+                    )
+                    assert restored_status == 200
+                    assert restored_data["success"] is True
+                    assert subtitle_api.normalize_char_num(restored_data["data"]["charNum"]) == original_char_num
+                else:
+                    latest_detail_status, latest_detail_data = detail_api.get_project_detail(project_id)
+                    assert latest_detail_status == 200
+                    assert latest_detail_data["success"] is True
+
+    @allure.feature("加字幕")
     @allure.story("删除字幕")
     @allure.title("删除新增字幕-正常场景")
     @pytest.mark.P0

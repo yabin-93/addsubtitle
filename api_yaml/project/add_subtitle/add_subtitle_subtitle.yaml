@@ -14,6 +14,15 @@ update_subtitle_show:
     Content-Type: application/json
     Cookie: $cookie
 
+update_char_num:
+  api: /api/project/$project_id/updateCharNum
+  method: get
+  params:
+    charNum: $char_num
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie
+
 batch_edit_subtitle:
   api: /api/project/$project_id/batchEditSubtitle
   method: post
