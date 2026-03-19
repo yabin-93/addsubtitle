@@ -12,3 +12,4 @@ extract.yaml
 common/Logs/
 test_data/temp/*
 !test_data/temp/.gitkeep
+common/settings.py
