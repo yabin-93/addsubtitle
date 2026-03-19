@@ -28,6 +28,7 @@ STYLE_VERIFY_KEYS = ("subtitleName", "fontFamilyUrl")
 PRESET_FONT_SIZES = (32, 36, 40, 44, 48, 52, 56, 64, 72, 80)
 PRESET_FONT_BOLD_VALUES = (True, False)
 PRESET_FONT_ITALIC_VALUES = (True, False)
+PROJECT_ASPECT_TYPES = (0, 2, 1, 3, 4)
 
 
 @allure.epic("AddSubtitle")
@@ -522,6 +523,81 @@ class TestProjSubtitle:
             assert restored_detail_status == 200
             assert restored_detail_data["success"] is True
             assert restored_detail_data["data"]["subtitleShow"] == 3
+
+    @allure.feature("加字幕")
+    @allure.story("切换视频比例")
+    @allure.title("切换项目尺寸比例")
+    @pytest.mark.P0
+    def test_update_project_aspect(self):
+        project_id = self._get_target_project_id()
+        subtitle_api = ProjSubtitle()
+        detail_api = ProjCreate()
+
+        detail_status, detail_data = detail_api.get_project_detail(project_id)
+        assert detail_status == 200
+        assert detail_data["success"] is True
+
+        detail_payload = detail_data.get("data", {})
+        original_aspect_type = detail_payload.get("aspectType")
+        assert original_aspect_type in PROJECT_ASPECT_TYPES
+
+        assert detail_payload.get("sessionId") is not None
+
+        candidate_aspect_types = [
+            aspect_type for aspect_type in PROJECT_ASPECT_TYPES if aspect_type != original_aspect_type
+        ]
+        latest_aspect_type = original_aspect_type
+
+        try:
+            for aspect_type in candidate_aspect_types:
+                status_code, data = subtitle_api.update_project_aspect(
+                    project_id,
+                    aspect_type,
+                )
+                assert status_code == 200, data
+                assert data["success"] is True
+                assert data["code"] == 0
+
+                updated_status, updated_data = subtitle_api.wait_for_project_aspect_updated(
+                    project_id,
+                    aspect_type,
+                    timeout=30,
+                    interval=2,
+                )
+                assert updated_status == 200
+                assert updated_data["success"] is True
+                assert updated_data["data"]["aspectType"] == aspect_type
+
+                project_status, project_status_data = detail_api.get_project_status(project_id)
+                assert project_status == 200
+                assert project_status_data["success"] is True
+                assert project_status_data["data"]["projectCreatedFailed"] is False
+
+                latest_aspect_type = aspect_type
+        finally:
+            if latest_aspect_type != original_aspect_type:
+                restore_status, restore_data = subtitle_api.update_project_aspect(
+                    project_id,
+                    original_aspect_type,
+                )
+                assert restore_status == 200, restore_data
+                assert restore_data["success"] is True
+                assert restore_data["code"] == 0
+
+                restored_status, restored_data = subtitle_api.wait_for_project_aspect_updated(
+                    project_id,
+                    original_aspect_type,
+                    timeout=30,
+                    interval=2,
+                )
+                assert restored_status == 200
+                assert restored_data["success"] is True
+                assert restored_data["data"]["aspectType"] == original_aspect_type
+
+                project_status, project_status_data = detail_api.get_project_status(project_id)
+                assert project_status == 200
+                assert project_status_data["success"] is True
+                assert project_status_data["data"]["projectCreatedFailed"] is False
 
     @allure.feature("加字幕")
     @allure.story("字幕设置")

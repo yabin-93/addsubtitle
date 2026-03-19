@@ -14,6 +14,16 @@ update_subtitle_show:
     Content-Type: application/json
     Cookie: $cookie
 
+update_project_aspect:
+  api: /api/project/$project_id/updateInfo
+  method: post
+  json:
+    sessionId: $session_id
+    aspectType: $aspect_type
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie
+
 update_char_num:
   api: /api/project/$project_id/updateCharNum
   method: get

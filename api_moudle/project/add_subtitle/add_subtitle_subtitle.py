@@ -10,6 +10,7 @@ from common.yaml_util import read_yaml, write_yaml
 class ProjSubtitle(BaseApi):
     VALID_SUBTITLE_SHOW_ENUMS = {0, 1, 2, 3}
     VALID_SUBTITLE_TYPES = {0, 1}
+    VALID_ASPECT_TYPES = {0, 1, 2, 3, 4}
     LIST_KEY_BY_TYPE = {0: "oriList", 1: "transList"}
     SEGMENT_KEY_BY_TYPE = {0: "oriSegments", 1: "transSegments"}
     DEFAULT_NEW_SUBTITLE_DURATION = 900
@@ -27,6 +28,12 @@ class ProjSubtitle(BaseApi):
         if subtitle_type not in cls.VALID_SUBTITLE_TYPES:
             raise ValueError(f"subtitle_type 只能是 {sorted(cls.VALID_SUBTITLE_TYPES)} 中的一个")
         return subtitle_type
+
+    @classmethod
+    def normalize_aspect_type(cls, aspect_type):
+        if aspect_type not in cls.VALID_ASPECT_TYPES:
+            raise ValueError(f"aspect_type must be one of {sorted(cls.VALID_ASPECT_TYPES)}")
+        return aspect_type
 
     @staticmethod
     def normalize_char_num(char_num):
@@ -547,6 +554,79 @@ class ProjSubtitle(BaseApi):
             time.sleep(interval)
 
         return [408, {"stage": "wait_for_subtitle_show_updated", "latest": latest_response}]
+
+    def update_project_aspect(self, project_id, aspect_type, session_id=None, cookie=None):
+        api_aspect_type = self.normalize_aspect_type(aspect_type)
+        try:
+            if session_id is None:
+                session_status, session_id, session_data = self.get_project_session_id(
+                    project_id,
+                    cookie=cookie,
+                )
+                if session_status != 200 or not session_id:
+                    return [
+                        session_status,
+                        {
+                            "error": "update_project_aspect_failed",
+                            "message": "project sessionId not found",
+                            "data": session_data,
+                        },
+                    ]
+
+            response = self.run_authed_request(
+                "project/add_subtitle/add_subtitle_subtitle.yaml",
+                "update_project_aspect",
+                cookie=cookie,
+                project_id=project_id,
+                session_id=session_id,
+                aspect_type=api_aspect_type,
+            )
+
+            response_status, response_data = response
+            if (
+                session_id is not None
+                and isinstance(response_data, dict)
+                and response_data.get("code") == -33
+            ):
+                session_status, fresh_session_id, session_data = self.get_project_session_id(
+                    project_id,
+                    cookie=cookie,
+                )
+                if session_status == 200 and fresh_session_id and fresh_session_id != session_id:
+                    return self.run_authed_request(
+                        "project/add_subtitle/add_subtitle_subtitle.yaml",
+                        "update_project_aspect",
+                        cookie=cookie,
+                        project_id=project_id,
+                        session_id=fresh_session_id,
+                        aspect_type=api_aspect_type,
+                    )
+
+            return [response_status, response_data]
+        except Exception as e:
+            logger.error(f"update_project_aspect failed: {e}")
+            return [None, {"error": "update_project_aspect_failed", "message": str(e)}]
+
+    def wait_for_project_aspect_updated(self, project_id, aspect_type, cookie=None, timeout=30, interval=2):
+        expected_aspect_type = self.normalize_aspect_type(aspect_type)
+        deadline = time.time() + timeout
+        latest_response = None
+        project_create_api = ProjCreate()
+
+        while time.time() < deadline:
+            status_code, data = project_create_api.get_project_detail(project_id, cookie=cookie)
+            latest_response = {"status_code": status_code, "data": data}
+
+            if (
+                status_code == 200
+                and data.get("success") is True
+                and data.get("data", {}).get("aspectType") == expected_aspect_type
+            ):
+                return [200, data]
+
+            time.sleep(interval)
+
+        return [408, {"stage": "wait_for_project_aspect_updated", "latest": latest_response}]
 
     def update_char_num(self, project_id, char_num, cookie=None):
         api_char_num = self.normalize_char_num(char_num)
