@@ -23,6 +23,13 @@ DEFAULT_FONT_BOLD_SQL = (
     "ORDER BY CAST(sort AS UNSIGNED), CAST(id AS UNSIGNED) "
     "LIMIT 1"
 )
+DEFAULT_FONT_ITALIC_SQL = (
+    "SELECT CAST(font_italic AS UNSIGNED) AS fontItalic "
+    "FROM subtitle "
+    "WHERE type = 0 AND language = 'ZH' AND font_italic IS NOT NULL "
+    "ORDER BY CAST(sort AS UNSIGNED), CAST(id AS UNSIGNED) "
+    "LIMIT 1"
+)
 
 
 def _safe_fetch_all(sql):
@@ -132,3 +139,16 @@ def load_default_font_bold(default_bold=None, sql=None):
             return font_bold
 
     return default_bold
+
+
+def load_default_font_italic(default_italic=None, sql=None):
+    if not is_db_configured():
+        return default_italic
+
+    rows = _safe_fetch_all(sql or DEFAULT_FONT_ITALIC_SQL)
+    for row in rows:
+        font_italic = _normalize_font_bold(row.get("fontItalic") or row.get("font_italic"))
+        if font_italic is not None:
+            return font_italic
+
+    return default_italic
