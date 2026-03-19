@@ -6,7 +6,25 @@ import pytest
 from api_moudle.project.add_subtitle.add_subtitle_create import ProjCreate
 from api_moudle.project.home.proj_list import ProjList
 from api_moudle.project.add_subtitle.add_subtitle_subtitle import ProjSubtitle
+from common.font_style_db import load_font_style_cases
 from common.yaml_util import read_yaml, write_yaml
+
+
+FONT_STYLE_CASES = [
+    {
+        "subtitleName": "\u963f\u91cc\u5df4\u5df4\u666e\u60e0\u4f53",
+        "fontFamilyUrl": "https://web.talecast.ai/resource/resources/assets/captions/font_family_url/Alibaba-PuHuiTi-Regular.ttf",
+    },
+    {
+        "subtitleName": "\u963f\u91cc\u5988\u5988\u6570\u9ed1\u4f53",
+        "fontFamilyUrl": "https://web.talecast.ai/resource/resources/assets/captions/font_family_url/AlimamaShuHeiTi-Bold.otf",
+    },
+    {
+        "subtitleName": "\u963f\u91cc\u5988\u5988\u5200\u96b6\u4f53",
+        "fontFamilyUrl": "https://web.talecast.ai/resource/resources/assets/captions/font_family_url/Alimama-DaoLiTi.ttf",
+    },
+]
+STYLE_VERIFY_KEYS = ("subtitleName", "fontFamilyUrl")
 
 
 @allure.epic("AddSubtitle")
@@ -53,7 +71,23 @@ class TestProjSubtitle:
             trans_item = trans_map.get(ori_item["subtitleArrId"])
             if trans_item is not None:
                 return copy.deepcopy(ori_item), copy.deepcopy(trans_item)
-        raise AssertionError("未找到可用的原文/译文字幕对")
+        raise AssertionError("No available original/translated subtitle pair was found")
+
+    @staticmethod
+    def _get_ready_translation_item(subtitle_data):
+        try:
+            _, trans_item = TestProjSubtitle._get_first_subtitle_pair(subtitle_data)
+        except AssertionError:
+            return None
+
+        translated_texts = ProjSubtitle.extract_segment_texts(trans_item)
+        if trans_item.get("subtitleArrId") is None:
+            return None
+        if trans_item.get("isTranslating") is True:
+            return None
+        if not any(translated_texts):
+            return None
+        return trans_item
 
     @staticmethod
     def _build_original_edit_texts(original_texts):
@@ -546,6 +580,133 @@ class TestProjSubtitle:
                     latest_detail_status, latest_detail_data = detail_api.get_project_detail(project_id)
                     assert latest_detail_status == 200
                     assert latest_detail_data["success"] is True
+
+    @allure.feature("Add Subtitle")
+    @allure.story("Subtitle Style")
+    @allure.title("Batch Switch Font Styles")
+    @pytest.mark.P0
+    def test_batch_style_fonts(self):
+        project_id = self._get_target_project_id()
+        subtitle_api = ProjSubtitle()
+        detail_api = ProjCreate()
+
+        subtitle_status, subtitle_data = subtitle_api.wait_for_project_subtitle_ready(
+            project_id,
+            timeout=90,
+            interval=3,
+        )
+        assert subtitle_status == 200
+        assert subtitle_data["success"] is True
+
+        target_translation = self._get_ready_translation_item(subtitle_data)
+        if target_translation is None:
+            pytest.skip("No ready translated subtitle was found for font style update")
+
+        subtitle_arr_id = target_translation.get("subtitleArrId")
+        assert subtitle_arr_id is not None
+
+        style_status, style_data = detail_api.get_project_style(project_id)
+        assert style_status == 200
+        assert style_data["success"] is True
+
+        target_style_item = subtitle_api.find_style_item(
+            style_data,
+            subtitle_arr_id=subtitle_arr_id,
+            subtitle_type=1,
+        )
+        if target_style_item is None:
+            target_style_item = {
+                "subtitleArrId": subtitle_arr_id,
+                "subtitleType": 1,
+                "style": {},
+            }
+
+        original_style = copy.deepcopy(target_style_item["style"])
+        original_style_fields = {
+            key: original_style.get(key)
+            for key in STYLE_VERIFY_KEYS
+            if original_style.get(key) is not None
+        }
+        font_style_cases = load_font_style_cases(default_cases=FONT_STYLE_CASES)
+        candidate_styles = [
+            style_case
+            for style_case in font_style_cases
+            if any(original_style.get(key) != value for key, value in style_case.items())
+        ]
+        if not candidate_styles:
+            pytest.skip("No alternative test fonts are available for the current project style")
+
+        latest_style_item = copy.deepcopy(target_style_item)
+
+        try:
+            for style_case in candidate_styles:
+                expected_fields = subtitle_api.normalize_style_match_fields(style_case)
+                style_item = subtitle_api.build_batch_style_item(
+                    latest_style_item,
+                    style_updates=style_case,
+                    subtitle_arr_id=subtitle_arr_id,
+                )
+
+                status_code, data = subtitle_api.batch_style(
+                    project_id,
+                    subtitle_type=1,
+                    style_list=[style_item],
+                )
+                assert status_code == 200
+                assert data["success"] is True
+                assert data["code"] == 0
+
+                updated_status, updated_data = subtitle_api.wait_for_style_updated(
+                    project_id,
+                    subtitle_arr_id=subtitle_arr_id,
+                    expected_style_fields=expected_fields,
+                    subtitle_type=1,
+                    timeout=30,
+                    interval=2,
+                )
+                assert updated_status == 200
+                assert updated_data["success"] is True
+
+                latest_style_item = subtitle_api.find_style_item(
+                    updated_data,
+                    subtitle_arr_id=subtitle_arr_id,
+                    subtitle_type=1,
+                )
+                assert latest_style_item is not None
+                for key, value in expected_fields.items():
+                    assert latest_style_item["style"].get(key) == value
+        finally:
+            if original_style_fields:
+                restore_item = subtitle_api.build_batch_style_item(
+                    latest_style_item,
+                    style_updates=original_style,
+                    subtitle_arr_id=subtitle_arr_id,
+                )
+            else:
+                restore_item = {
+                    "subtitleArrId": subtitle_arr_id,
+                    "style": {},
+                }
+
+            restore_status, restore_data = subtitle_api.batch_style(
+                project_id,
+                subtitle_type=1,
+                style_list=[restore_item],
+            )
+            assert restore_status == 200
+            assert restore_data["success"] is True
+            assert restore_data["code"] == 0
+
+            restored_status, restored_data = subtitle_api.wait_for_style_updated(
+                project_id,
+                subtitle_arr_id=subtitle_arr_id,
+                expected_style_fields=original_style_fields,
+                subtitle_type=1,
+                timeout=30,
+                interval=2,
+            )
+            assert restored_status == 200
+            assert restored_data["success"] is True
 
     @allure.feature("加字幕")
     @allure.story("删除字幕")

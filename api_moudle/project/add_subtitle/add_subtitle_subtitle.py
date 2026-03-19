@@ -1,3 +1,4 @@
+import copy
 import time
 
 from api_moudle.project.home.base_api import BaseApi
@@ -33,6 +34,13 @@ class ProjSubtitle(BaseApi):
         if api_char_num <= 0:
             raise ValueError("char_num must be greater than 0")
         return api_char_num
+
+    @staticmethod
+    def normalize_subtitle_arr_id(subtitle_arr_id):
+        try:
+            return int(subtitle_arr_id)
+        except (TypeError, ValueError):
+            return subtitle_arr_id
 
     @classmethod
     def get_list_key(cls, subtitle_type):
@@ -180,6 +188,117 @@ class ProjSubtitle(BaseApi):
         item[segment_key] = cls.build_segments(subtitle_item, edited_texts=edited_texts)
         return item
 
+    @staticmethod
+    def normalize_style_match_fields(style_fields):
+        if not isinstance(style_fields, dict) or not style_fields:
+            raise ValueError("style_fields must be a non-empty dict")
+        return {key: value for key, value in style_fields.items() if value is not None}
+
+    @staticmethod
+    def _normalize_optional_subtitle_type(subtitle_type):
+        if subtitle_type is None:
+            return None
+        try:
+            subtitle_type = int(subtitle_type)
+        except (TypeError, ValueError):
+            return None
+        return subtitle_type if subtitle_type in ProjSubtitle.VALID_SUBTITLE_TYPES else None
+
+    @classmethod
+    def extract_style_items(cls, style_data):
+        style_items = []
+        seen = set()
+
+        payload = style_data.get("data", {}) if isinstance(style_data, dict) else {}
+        for style_key, subtitle_type in (("oriStyle", 0), ("transStyle", 1)):
+            style_map = payload.get(style_key)
+            if not isinstance(style_map, dict):
+                continue
+
+            for subtitle_arr_id, style_payload in style_map.items():
+                if not isinstance(style_payload, dict):
+                    continue
+
+                normalized_arr_id = cls.normalize_subtitle_arr_id(subtitle_arr_id)
+                dedupe_key = (normalized_arr_id, subtitle_type)
+                if dedupe_key in seen:
+                    continue
+                seen.add(dedupe_key)
+                style_items.append(
+                    {
+                        "subtitleArrId": normalized_arr_id,
+                        "subtitleType": subtitle_type,
+                        "style": copy.deepcopy(style_payload),
+                        "raw": style_payload,
+                    }
+                )
+
+        def walk(node, inherited_subtitle_type=None):
+            if isinstance(node, dict):
+                current_subtitle_type = cls._normalize_optional_subtitle_type(
+                    node.get("subtitleType", inherited_subtitle_type)
+                )
+                if isinstance(node.get("style"), dict) and node.get("subtitleArrId") is not None:
+                    normalized_arr_id = cls.normalize_subtitle_arr_id(node.get("subtitleArrId"))
+                    dedupe_key = (normalized_arr_id, current_subtitle_type)
+                    if dedupe_key not in seen:
+                        seen.add(dedupe_key)
+                        style_items.append(
+                            {
+                                "subtitleArrId": normalized_arr_id,
+                                "subtitleType": current_subtitle_type,
+                                "style": copy.deepcopy(node["style"]),
+                                "raw": node,
+                            }
+                        )
+
+                for value in node.values():
+                    walk(value, current_subtitle_type)
+            elif isinstance(node, list):
+                for item in node:
+                    walk(item, inherited_subtitle_type)
+
+        walk(style_data)
+        return style_items
+
+    @classmethod
+    def find_style_item(cls, style_data, subtitle_arr_id=None, subtitle_type=None):
+        expected_subtitle_type = cls._normalize_optional_subtitle_type(subtitle_type)
+        expected_subtitle_arr_id = cls.normalize_subtitle_arr_id(subtitle_arr_id)
+        fallback_item = None
+
+        for item in cls.extract_style_items(style_data):
+            if expected_subtitle_arr_id is not None and item.get("subtitleArrId") != expected_subtitle_arr_id:
+                continue
+            if expected_subtitle_type is None or item.get("subtitleType") == expected_subtitle_type:
+                return item
+            if fallback_item is None and item.get("subtitleType") is None:
+                fallback_item = item
+
+        return fallback_item
+
+    @staticmethod
+    def style_matches(style_payload, expected_fields):
+        return all(style_payload.get(key) == value for key, value in expected_fields.items())
+
+    @classmethod
+    def build_batch_style_item(cls, style_item, style_updates=None, subtitle_arr_id=None):
+        if not isinstance(style_item, dict) or not isinstance(style_item.get("style"), dict):
+            raise ValueError("style_item must contain a style dict")
+
+        resolved_subtitle_arr_id = style_item.get("subtitleArrId") if subtitle_arr_id is None else subtitle_arr_id
+        if resolved_subtitle_arr_id is None:
+            raise ValueError("subtitle_arr_id is required for batch style update")
+
+        style_payload = copy.deepcopy(style_item["style"])
+        if style_updates:
+            style_payload.update(copy.deepcopy(style_updates))
+
+        return {
+            "subtitleArrId": resolved_subtitle_arr_id,
+            "style": style_payload,
+        }
+
     def get_project_subtitle(self, project_id, cookie=None):
         try:
             return self.run_authed_request(
@@ -252,6 +371,40 @@ class ProjSubtitle(BaseApi):
         except Exception as e:
             logger.error(f"批量编辑字幕失败，错误: {e}")
             return [None, {"error": "batch_edit_subtitle_failed", "message": str(e)}]
+
+    def batch_style(self, project_id, subtitle_type, style_list, session_id=None, cookie=None):
+        api_subtitle_type = self.normalize_subtitle_type(subtitle_type)
+        if not style_list:
+            raise ValueError("style_list cannot be empty")
+
+        try:
+            if session_id is None:
+                session_status, session_id, session_data = self.get_project_session_id(
+                    project_id,
+                    cookie=cookie,
+                )
+                if session_status != 200 or not session_id:
+                    return [
+                        session_status,
+                        {
+                            "error": "batch_style_failed",
+                            "message": "project sessionId not found",
+                            "data": session_data,
+                        },
+                    ]
+
+            return self.run_authed_request(
+                "project/add_subtitle/add_subtitle_subtitle.yaml",
+                "batch_style",
+                cookie=cookie,
+                project_id=project_id,
+                session_id=session_id,
+                subtitle_type=api_subtitle_type,
+                style_list=style_list,
+            )
+        except Exception as e:
+            logger.error(f"batch_style failed: {e}")
+            return [None, {"error": "batch_style_failed", "message": str(e)}]
 
     def add_new_subtitle(
         self,
@@ -405,6 +558,45 @@ class ProjSubtitle(BaseApi):
         except Exception as e:
             logger.error(f"update_char_num failed: {e}")
             return [None, {"error": "update_char_num_failed", "message": str(e)}]
+
+    def wait_for_style_updated(
+        self,
+        project_id,
+        subtitle_arr_id,
+        expected_style_fields,
+        subtitle_type=None,
+        cookie=None,
+        timeout=30,
+        interval=2,
+    ):
+        if not isinstance(expected_style_fields, dict):
+            raise ValueError("expected_style_fields must be a dict")
+
+        expected_fields = {key: value for key, value in expected_style_fields.items() if value is not None}
+        expect_empty_style = not expected_fields and not expected_style_fields
+        deadline = time.time() + timeout
+        latest_response = None
+        project_create_api = ProjCreate()
+
+        while time.time() < deadline:
+            status_code, data = project_create_api.get_project_style(project_id, cookie=cookie)
+            latest_response = {"status_code": status_code, "data": data}
+
+            if status_code == 200 and data.get("success") is True:
+                style_item = self.find_style_item(
+                    data,
+                    subtitle_arr_id=subtitle_arr_id,
+                    subtitle_type=subtitle_type,
+                )
+                if style_item:
+                    if expect_empty_style and style_item["style"] == {}:
+                        return [200, data]
+                    if expected_fields and self.style_matches(style_item["style"], expected_fields):
+                        return [200, data]
+
+            time.sleep(interval)
+
+        return [408, {"stage": "wait_for_style_updated", "latest": latest_response}]
 
     def wait_for_char_num_updated(self, project_id, char_num, cookie=None, timeout=30, interval=2):
         expected_char_num = self.normalize_char_num(char_num)

@@ -23,6 +23,17 @@ update_char_num:
     Content-Type: application/json
     Cookie: $cookie
 
+batch_style:
+  api: /api/project/$project_id/batchStyle
+  method: post
+  json:
+    sessionId: $session_id
+    subtitleType: $subtitle_type
+    styleList: $style_list
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie
+
 batch_edit_subtitle:
   api: /api/project/$project_id/batchEditSubtitle
   method: post
