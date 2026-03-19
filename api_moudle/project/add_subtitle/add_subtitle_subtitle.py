@@ -282,7 +282,7 @@ class ProjSubtitle(BaseApi):
         return all(style_payload.get(key) == value for key, value in expected_fields.items())
 
     @classmethod
-    def build_batch_style_item(cls, style_item, style_updates=None, subtitle_arr_id=None):
+    def build_batch_style_item(cls, style_item, style_updates=None, subtitle_arr_id=None, replace_style=False):
         if not isinstance(style_item, dict) or not isinstance(style_item.get("style"), dict):
             raise ValueError("style_item must contain a style dict")
 
@@ -290,8 +290,11 @@ class ProjSubtitle(BaseApi):
         if resolved_subtitle_arr_id is None:
             raise ValueError("subtitle_arr_id is required for batch style update")
 
-        style_payload = copy.deepcopy(style_item["style"])
-        if style_updates:
+        if replace_style:
+            style_payload = copy.deepcopy(style_updates or {})
+        else:
+            style_payload = copy.deepcopy(style_item["style"])
+        if style_updates and not replace_style:
             style_payload.update(copy.deepcopy(style_updates))
 
         return {

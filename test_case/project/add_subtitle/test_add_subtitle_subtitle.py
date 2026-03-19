@@ -6,7 +6,7 @@ import pytest
 from api_moudle.project.add_subtitle.add_subtitle_create import ProjCreate
 from api_moudle.project.home.proj_list import ProjList
 from api_moudle.project.add_subtitle.add_subtitle_subtitle import ProjSubtitle
-from common.font_style_db import load_font_style_cases
+from common.font_style_db import load_default_font_bold, load_default_font_size, load_font_style_cases
 from common.yaml_util import read_yaml, write_yaml
 
 
@@ -25,6 +25,8 @@ FONT_STYLE_CASES = [
     },
 ]
 STYLE_VERIFY_KEYS = ("subtitleName", "fontFamilyUrl")
+PRESET_FONT_SIZES = (32, 36, 40, 44, 48, 52, 56, 64, 72, 80)
+PRESET_FONT_BOLD_VALUES = (True, False)
 
 
 @allure.epic("AddSubtitle")
@@ -676,17 +678,12 @@ class TestProjSubtitle:
                 for key, value in expected_fields.items():
                     assert latest_style_item["style"].get(key) == value
         finally:
-            if original_style_fields:
-                restore_item = subtitle_api.build_batch_style_item(
-                    latest_style_item,
-                    style_updates=original_style,
-                    subtitle_arr_id=subtitle_arr_id,
-                )
-            else:
-                restore_item = {
-                    "subtitleArrId": subtitle_arr_id,
-                    "style": {},
-                }
+            restore_item = subtitle_api.build_batch_style_item(
+                latest_style_item,
+                style_updates=original_style,
+                subtitle_arr_id=subtitle_arr_id,
+                replace_style=True,
+            )
 
             restore_status, restore_data = subtitle_api.batch_style(
                 project_id,
@@ -700,7 +697,239 @@ class TestProjSubtitle:
             restored_status, restored_data = subtitle_api.wait_for_style_updated(
                 project_id,
                 subtitle_arr_id=subtitle_arr_id,
-                expected_style_fields=original_style_fields,
+                expected_style_fields=original_style,
+                subtitle_type=1,
+                timeout=30,
+                interval=2,
+            )
+            assert restored_status == 200
+            assert restored_data["success"] is True
+
+    @allure.feature("Add Subtitle")
+    @allure.story("Subtitle Style")
+    @allure.title("Batch Switch Preset Font Sizes")
+    @pytest.mark.P0
+    def test_batch_style_font_sizes(self):
+        project_id = self._get_target_project_id()
+        subtitle_api = ProjSubtitle()
+        detail_api = ProjCreate()
+
+        subtitle_status, subtitle_data = subtitle_api.wait_for_project_subtitle_ready(
+            project_id,
+            timeout=90,
+            interval=3,
+        )
+        assert subtitle_status == 200
+        assert subtitle_data["success"] is True
+
+        target_translation = self._get_ready_translation_item(subtitle_data)
+        if target_translation is None:
+            pytest.skip("No ready translated subtitle was found for font size update")
+
+        subtitle_arr_id = target_translation.get("subtitleArrId")
+        assert subtitle_arr_id is not None
+
+        style_status, style_data = detail_api.get_project_style(project_id)
+        assert style_status == 200
+        assert style_data["success"] is True
+
+        target_style_item = subtitle_api.find_style_item(
+            style_data,
+            subtitle_arr_id=subtitle_arr_id,
+            subtitle_type=1,
+        )
+        if target_style_item is None:
+            target_style_item = {
+                "subtitleArrId": subtitle_arr_id,
+                "subtitleType": 1,
+                "style": {},
+            }
+
+        original_style = copy.deepcopy(target_style_item["style"])
+        original_font_size = original_style.get("fontSize")
+        default_font_size = load_default_font_size(default_size=None)
+        baseline_font_size = original_font_size if original_font_size is not None else default_font_size
+        candidate_sizes = [font_size for font_size in PRESET_FONT_SIZES if font_size != baseline_font_size]
+        if not candidate_sizes:
+            pytest.skip("No alternative preset font sizes are available for the current project style")
+
+        latest_style_item = copy.deepcopy(target_style_item)
+
+        try:
+            for font_size in candidate_sizes:
+                style_item = subtitle_api.build_batch_style_item(
+                    latest_style_item,
+                    style_updates={"fontSize": font_size},
+                    subtitle_arr_id=subtitle_arr_id,
+                )
+
+                status_code, data = subtitle_api.batch_style(
+                    project_id,
+                    subtitle_type=1,
+                    style_list=[style_item],
+                )
+                assert status_code == 200, data
+                assert data["success"] is True
+                assert data["code"] == 0
+
+                updated_status, updated_data = subtitle_api.wait_for_style_updated(
+                    project_id,
+                    subtitle_arr_id=subtitle_arr_id,
+                    expected_style_fields={"fontSize": font_size},
+                    subtitle_type=1,
+                    timeout=30,
+                    interval=2,
+                )
+                assert updated_status == 200
+                assert updated_data["success"] is True
+
+                latest_style_item = subtitle_api.find_style_item(
+                    updated_data,
+                    subtitle_arr_id=subtitle_arr_id,
+                    subtitle_type=1,
+                )
+                assert latest_style_item is not None
+                assert latest_style_item["style"].get("fontSize") == font_size
+        finally:
+            restore_item = subtitle_api.build_batch_style_item(
+                latest_style_item,
+                style_updates=original_style,
+                subtitle_arr_id=subtitle_arr_id,
+                replace_style=True,
+            )
+
+            restore_status, restore_data = subtitle_api.batch_style(
+                project_id,
+                subtitle_type=1,
+                style_list=[restore_item],
+            )
+            assert restore_status == 200, restore_data
+            assert restore_data["success"] is True
+            assert restore_data["code"] == 0
+
+            restored_status, restored_data = subtitle_api.wait_for_style_updated(
+                project_id,
+                subtitle_arr_id=subtitle_arr_id,
+                expected_style_fields=original_style,
+                subtitle_type=1,
+                timeout=30,
+                interval=2,
+            )
+            assert restored_status == 200
+            assert restored_data["success"] is True
+
+    @allure.feature("Add Subtitle")
+    @allure.story("Subtitle Style")
+    @allure.title("Batch Switch Font Bold")
+    @pytest.mark.P0
+    def test_batch_style_font_bold(self):
+        project_id = self._get_target_project_id()
+        subtitle_api = ProjSubtitle()
+        detail_api = ProjCreate()
+
+        subtitle_status, subtitle_data = subtitle_api.wait_for_project_subtitle_ready(
+            project_id,
+            timeout=90,
+            interval=3,
+        )
+        assert subtitle_status == 200
+        assert subtitle_data["success"] is True
+
+        target_translation = self._get_ready_translation_item(subtitle_data)
+        if target_translation is None:
+            pytest.skip("No ready translated subtitle was found for font bold update")
+
+        subtitle_arr_id = target_translation.get("subtitleArrId")
+        assert subtitle_arr_id is not None
+
+        style_status, style_data = detail_api.get_project_style(project_id)
+        assert style_status == 200
+        assert style_data["success"] is True
+
+        target_style_item = subtitle_api.find_style_item(
+            style_data,
+            subtitle_arr_id=subtitle_arr_id,
+            subtitle_type=1,
+        )
+        if target_style_item is None:
+            target_style_item = {
+                "subtitleArrId": subtitle_arr_id,
+                "subtitleType": 1,
+                "style": {},
+            }
+
+        original_style = copy.deepcopy(target_style_item["style"])
+        original_font_bold = original_style.get("fontBold")
+        baseline_font_bold = (
+            bool(original_font_bold)
+            if original_font_bold is not None
+            else load_default_font_bold(default_bold=None)
+        )
+        if baseline_font_bold is True:
+            candidate_values = [False, True]
+        elif baseline_font_bold is False:
+            candidate_values = [True, False]
+        else:
+            candidate_values = list(PRESET_FONT_BOLD_VALUES)
+
+        latest_style_item = copy.deepcopy(target_style_item)
+
+        try:
+            for font_bold in candidate_values:
+                style_item = subtitle_api.build_batch_style_item(
+                    latest_style_item,
+                    style_updates={"fontBold": font_bold},
+                    subtitle_arr_id=subtitle_arr_id,
+                )
+
+                status_code, data = subtitle_api.batch_style(
+                    project_id,
+                    subtitle_type=1,
+                    style_list=[style_item],
+                )
+                assert status_code == 200, data
+                assert data["success"] is True
+                assert data["code"] == 0
+
+                updated_status, updated_data = subtitle_api.wait_for_style_updated(
+                    project_id,
+                    subtitle_arr_id=subtitle_arr_id,
+                    expected_style_fields={"fontBold": font_bold},
+                    subtitle_type=1,
+                    timeout=30,
+                    interval=2,
+                )
+                assert updated_status == 200
+                assert updated_data["success"] is True
+
+                latest_style_item = subtitle_api.find_style_item(
+                    updated_data,
+                    subtitle_arr_id=subtitle_arr_id,
+                    subtitle_type=1,
+                )
+                assert latest_style_item is not None
+                assert latest_style_item["style"].get("fontBold") == font_bold
+        finally:
+            restore_item = subtitle_api.build_batch_style_item(
+                latest_style_item,
+                style_updates=original_style,
+                subtitle_arr_id=subtitle_arr_id,
+                replace_style=True,
+            )
+
+            restore_status, restore_data = subtitle_api.batch_style(
+                project_id,
+                subtitle_type=1,
+                style_list=[restore_item],
+            )
+            assert restore_status == 200, restore_data
+            assert restore_data["success"] is True
+            assert restore_data["code"] == 0
+
+            restored_status, restored_data = subtitle_api.wait_for_style_updated(
+                project_id,
+                subtitle_arr_id=subtitle_arr_id,
+                expected_style_fields=original_style,
                 subtitle_type=1,
                 timeout=30,
                 interval=2,
