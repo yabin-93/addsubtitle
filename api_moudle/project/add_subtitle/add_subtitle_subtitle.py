@@ -36,6 +36,13 @@ class ProjSubtitle(BaseApi):
         return aspect_type
 
     @staticmethod
+    def normalize_background_id(background_id):
+        api_background_id = int(background_id)
+        if api_background_id <= 0:
+            raise ValueError("background_id must be greater than 0")
+        return api_background_id
+
+    @staticmethod
     def normalize_char_num(char_num):
         api_char_num = int(char_num)
         if api_char_num <= 0:
@@ -627,6 +634,79 @@ class ProjSubtitle(BaseApi):
             time.sleep(interval)
 
         return [408, {"stage": "wait_for_project_aspect_updated", "latest": latest_response}]
+
+    def update_project_background(self, project_id, background_id, session_id=None, cookie=None):
+        api_background_id = self.normalize_background_id(background_id)
+        try:
+            if session_id is None:
+                session_status, session_id, session_data = self.get_project_session_id(
+                    project_id,
+                    cookie=cookie,
+                )
+                if session_status != 200 or not session_id:
+                    return [
+                        session_status,
+                        {
+                            "error": "update_project_background_failed",
+                            "message": "project sessionId not found",
+                            "data": session_data,
+                        },
+                    ]
+
+            response = self.run_authed_request(
+                "project/add_subtitle/add_subtitle_subtitle.yaml",
+                "update_project_background",
+                cookie=cookie,
+                project_id=project_id,
+                session_id=session_id,
+                background_id=api_background_id,
+            )
+
+            response_status, response_data = response
+            if (
+                session_id is not None
+                and isinstance(response_data, dict)
+                and response_data.get("code") == -33
+            ):
+                session_status, fresh_session_id, session_data = self.get_project_session_id(
+                    project_id,
+                    cookie=cookie,
+                )
+                if session_status == 200 and fresh_session_id and fresh_session_id != session_id:
+                    return self.run_authed_request(
+                        "project/add_subtitle/add_subtitle_subtitle.yaml",
+                        "update_project_background",
+                        cookie=cookie,
+                        project_id=project_id,
+                        session_id=fresh_session_id,
+                        background_id=api_background_id,
+                    )
+
+            return [response_status, response_data]
+        except Exception as e:
+            logger.error(f"update_project_background failed: {e}")
+            return [None, {"error": "update_project_background_failed", "message": str(e)}]
+
+    def wait_for_project_background_updated(self, project_id, background_id, cookie=None, timeout=30, interval=2):
+        expected_background_id = self.normalize_background_id(background_id)
+        deadline = time.time() + timeout
+        latest_response = None
+        project_create_api = ProjCreate()
+
+        while time.time() < deadline:
+            status_code, data = project_create_api.get_project_detail(project_id, cookie=cookie)
+            latest_response = {"status_code": status_code, "data": data}
+
+            if (
+                status_code == 200
+                and data.get("success") is True
+                and data.get("data", {}).get("backgroundId") == expected_background_id
+            ):
+                return [200, data]
+
+            time.sleep(interval)
+
+        return [408, {"stage": "wait_for_project_background_updated", "latest": latest_response}]
 
     def update_char_num(self, project_id, char_num, cookie=None):
         api_char_num = self.normalize_char_num(char_num)

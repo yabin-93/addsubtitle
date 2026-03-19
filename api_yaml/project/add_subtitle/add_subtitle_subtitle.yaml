@@ -24,6 +24,16 @@ update_project_aspect:
     Content-Type: application/json
     Cookie: $cookie
 
+update_project_background:
+  api: /api/project/$project_id/background
+  method: post
+  json:
+    sessionId: $session_id
+    backgroundId: $background_id
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie
+
 update_char_num:
   api: /api/project/$project_id/updateCharNum
   method: get

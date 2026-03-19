@@ -6,6 +6,7 @@ import pytest
 from api_moudle.project.add_subtitle.add_subtitle_create import ProjCreate
 from api_moudle.project.home.proj_list import ProjList
 from api_moudle.project.add_subtitle.add_subtitle_subtitle import ProjSubtitle
+from common.background_db import load_background_cases
 from common.font_style_db import load_default_font_bold, load_default_font_italic, load_default_font_size, load_font_style_cases
 from common.yaml_util import read_yaml, write_yaml
 
@@ -593,6 +594,87 @@ class TestProjSubtitle:
                 assert restored_status == 200
                 assert restored_data["success"] is True
                 assert restored_data["data"]["aspectType"] == original_aspect_type
+
+                project_status, project_status_data = detail_api.get_project_status(project_id)
+                assert project_status == 200
+                assert project_status_data["success"] is True
+                assert project_status_data["data"]["projectCreatedFailed"] is False
+
+    @allure.feature("加字幕")
+    @allure.story("切换视频背景")
+    @allure.title("切换项目背景")
+    @pytest.mark.P0
+    def test_update_project_background(self):
+        project_id = self._get_target_project_id()
+        subtitle_api = ProjSubtitle()
+        detail_api = ProjCreate()
+
+        detail_status, detail_data = detail_api.get_project_detail(project_id)
+        assert detail_status == 200
+        assert detail_data["success"] is True
+
+        detail_payload = detail_data.get("data", {})
+        original_background_id = detail_payload.get("backgroundId")
+        assert original_background_id is not None
+
+        background_cases = load_background_cases()
+        candidate_backgrounds = [
+            background_case
+            for background_case in background_cases
+            if background_case.get("id") != original_background_id
+        ]
+        if not candidate_backgrounds:
+            pytest.skip("No alternative background cases were loaded from database")
+
+        latest_background_id = original_background_id
+
+        try:
+            for background_case in candidate_backgrounds:
+                background_id = background_case["id"]
+
+                status_code, data = subtitle_api.update_project_background(
+                    project_id,
+                    background_id,
+                )
+                assert status_code == 200, data
+                assert data["success"] is True
+                assert data["code"] == 0
+
+                updated_status, updated_data = subtitle_api.wait_for_project_background_updated(
+                    project_id,
+                    background_id,
+                    timeout=30,
+                    interval=2,
+                )
+                assert updated_status == 200
+                assert updated_data["success"] is True
+                assert updated_data["data"]["backgroundId"] == background_id
+
+                project_status, project_status_data = detail_api.get_project_status(project_id)
+                assert project_status == 200
+                assert project_status_data["success"] is True
+                assert project_status_data["data"]["projectCreatedFailed"] is False
+
+                latest_background_id = background_id
+        finally:
+            if latest_background_id != original_background_id:
+                restore_status, restore_data = subtitle_api.update_project_background(
+                    project_id,
+                    original_background_id,
+                )
+                assert restore_status == 200, restore_data
+                assert restore_data["success"] is True
+                assert restore_data["code"] == 0
+
+                restored_status, restored_data = subtitle_api.wait_for_project_background_updated(
+                    project_id,
+                    original_background_id,
+                    timeout=30,
+                    interval=2,
+                )
+                assert restored_status == 200
+                assert restored_data["success"] is True
+                assert restored_data["data"]["backgroundId"] == original_background_id
 
                 project_status, project_status_data = detail_api.get_project_status(project_id)
                 assert project_status == 200
