@@ -1,4 +1,5 @@
 import requests
+import urllib3
 
 from common.logger import logger
 from common.settings import ADD_SUBTITLE_BASE_URL, ADD_SUBTITLE_LOGIN_EMAIL
@@ -7,6 +8,7 @@ from common.yaml_util import read_yaml, write_yaml
 
 BASE_URL = ADD_SUBTITLE_BASE_URL
 DEFAULT_LOGIN_EMAIL = ADD_SUBTITLE_LOGIN_EMAIL
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
 
 
 def _parse_response(response):
@@ -25,6 +27,7 @@ def refresh_cookie(email=None):
         json={"email": email, "language": "en"},
         headers={"Content-Type": "application/json"},
         timeout=20,
+        verify=False,
     )
     code_data = _parse_response(code_resp)
     if code_resp.status_code != 200 or code_data.get("success") is not True:
@@ -43,6 +46,7 @@ def refresh_cookie(email=None):
         },
         headers={"Content-Type": "application/json"},
         timeout=20,
+        verify=False,
     )
     login_data = _parse_response(login_resp)
     if login_resp.status_code != 200 or login_data.get("success") is not True:

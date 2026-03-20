@@ -359,6 +359,7 @@ class ProjSubtitle(BaseApi):
             ]
 
         return [200, session_id, detail_data]
+
     # 批量编辑字幕
     def batch_edit_subtitle(self, project_id, subtitle_list, session_id=None, cookie=None):
         try:

@@ -9,11 +9,12 @@ REGRESSION_MARK = "P0"
 ORDERED_TEST_FILES = [
     "test_case/auth/test_login.py",
     "test_case/project/add_subtitle/test_add_subtitle_create.py",
-    "test_case/project/home/test_proj_name_update.py",
-    "test_case/project/home/test_proj_list.py",
-    "test_case/project/add_subtitle/test_add_subtitle_timeline.py",
     "test_case/project/add_subtitle/test_add_subtitle_subtitle.py",
+    "test_case/project/add_subtitle/test_add_subtitle_timeline.py",
+    "test_case/project/home/test_proj_list.py",
+    "test_case/project/home/test_proj_name_update.py",
     "test_case/project/space/test_space_management.py",
+    "test_case/project/add_subtitle/test_add_subtitle_export.py",
 ]
 ORDERED_TEST_FILE_INDEX = {path: index for index, path in enumerate(ORDERED_TEST_FILES)}
 NON_REGRESSION_SKIP_REASON = "非上线前回归用例，暂时跳过"
@@ -29,13 +30,14 @@ def pytest_addoption(parser):
 
 
 def pytest_collection_modifyitems(config, items):
+    original_order = {item.nodeid: index for index, item in enumerate(items)}
+
     def sort_key(item):
         item_path = Path(str(item.fspath)).resolve()
         relative_path = item_path.relative_to(Path.cwd()).as_posix()
         return (
             ORDERED_TEST_FILE_INDEX.get(relative_path, len(ORDERED_TEST_FILE_INDEX)),
-            relative_path,
-            item.name,
+            original_order[item.nodeid],
         )
 
     items.sort(key=sort_key)

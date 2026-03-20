@@ -1,4 +1,4 @@
-﻿import copy
+import copy
 
 import allure
 import pytest

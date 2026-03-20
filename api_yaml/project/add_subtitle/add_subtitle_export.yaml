@@ -1,0 +1,21 @@
+export_backend:
+  api: /api/project/$project_id/exportBackend
+  method: post
+  multipart_form:
+    subtitleJson: $subtitle_json
+    headers: $export_headers
+    resolution: $resolution
+    lipSync: $lip_sync
+    deviceType: $device_type
+  headers:
+    Cookie: $cookie
+
+get_export_progress:
+  api: /api/project/$project_id/exportProgress
+  method: get
+  params:
+    version: $version
+    sessionId: $session_id
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie

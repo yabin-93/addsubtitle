@@ -1,34 +1,62 @@
+import json as json_lib
 import os
 from pathlib import Path
 from string import Template
 
 import requests
+import urllib3
 import yaml
 
 from common.auth_util import get_cookie
 from common.logger import logger
 from common.settings import ADD_SUBTITLE_BASE_URL
 
+urllib3.disable_warnings(urllib3.exceptions.InsecureRequestWarning)
+
 
 class BaseApi:
     def __init__(self):
         self.request = requests.session()
+        self.request.verify = False
 
-    def request_api(self, method, api, params=None, data=None, json=None, headers=None):
+    def request_api(self, method, api, params=None, data=None, json=None, headers=None, multipart_form=None):
         host = ADD_SUBTITLE_BASE_URL
         url_api = host + api
 
         logger.info(f"Start request: {method.upper()} {url_api}")
-        logger.debug(f"Request args: params={params}, data={data}, json={json}, headers={headers}")
+        logger.debug(
+            f"Request args: params={params}, data={data}, json={json}, headers={headers}, multipart_form={multipart_form}"
+        )
 
         try:
             if headers and headers.get("Cookie"):
                 self.request.cookies.clear()
 
+            request_headers = dict(headers) if headers else None
             if method == "post":
-                res = self.request.post(url_api, json=json, data=data, headers=headers)
+                if multipart_form is not None:
+                    if request_headers:
+                        request_headers = {
+                            key: value
+                            for key, value in request_headers.items()
+                            if key.lower() != "content-type"
+                        }
+                    files = []
+                    for key, value in multipart_form.items():
+                        if value is None:
+                            continue
+                        if isinstance(value, (dict, list)):
+                            normalized_value = json_lib.dumps(value, ensure_ascii=False)
+                        elif isinstance(value, bool):
+                            normalized_value = "true" if value else "false"
+                        else:
+                            normalized_value = str(value)
+                        files.append((key, (None, normalized_value)))
+                    res = self.request.post(url_api, files=files, headers=request_headers)
+                else:
+                    res = self.request.post(url_api, json=json, data=data, headers=request_headers)
             else:
-                res = self.request.get(url_api, params=params, headers=headers)
+                res = self.request.get(url_api, params=params, headers=request_headers)
 
             status_code = res.status_code
             logger.info(f"Request done: {method.upper()} {url_api} - Status Code: {status_code}")
@@ -77,8 +105,11 @@ class BaseApi:
         if kwargs:
             try:
                 yaml_data = yaml.dump(yaml_data)
+                multipart_mode = "multipart_form:" in yaml_data
                 for k, v in kwargs.items():
-                    if isinstance(v, str):
+                    if multipart_mode:
+                        kwargs[k] = json_lib.dumps(v, ensure_ascii=False)
+                    elif isinstance(v, str):
                         kwargs[k] = f"'{v}'"
                 yaml_data = Template(yaml_data).substitute(kwargs)
                 yaml_data = yaml.safe_load(yaml_data)
