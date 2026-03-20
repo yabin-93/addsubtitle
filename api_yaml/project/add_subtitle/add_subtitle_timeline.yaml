@@ -7,3 +7,13 @@ update_video:
   headers:
     Content-Type: "application/json"
     Cookie: $cookie
+
+drag_subtitle:
+  api: /api/project/$project_id/batchEditSubtitle
+  method: post
+  json:
+    sessionId: $session_id
+    list: $subtitle_list
+  headers:
+    Content-Type: "application/json"
+    Cookie: $cookie
