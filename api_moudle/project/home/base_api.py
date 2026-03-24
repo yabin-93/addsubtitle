@@ -19,6 +19,7 @@ class BaseApi:
         self.request = requests.session()
         self.request.verify = False
 
+    # 发送底层 HTTP 请求，统一处理请求头、表单上传、日志和异常。
     def request_api(self, method, api, params=None, data=None, json=None, headers=None, multipart_form=None):
         host = ADD_SUBTITLE_BASE_URL
         url_api = host + api
@@ -76,6 +77,7 @@ class BaseApi:
             logger.error(f"Request handling failed: {method} {url_api} - {e}")
             return [None, {"error": "request_handle_failed", "message": str(e)}]
 
+    # 发送需要登录态的请求；如果默认 cookie 失效，则自动刷新后重试一次。
     def run_authed_request(self, yaml_path, api_name, cookie=None, **kwargs):
         provided_cookie = cookie is not None
         active_cookie = cookie or get_cookie()
@@ -88,6 +90,7 @@ class BaseApi:
 
         return resp
 
+    # 从 YAML 中加载接口定义并替换参数，最后交给 request_api 执行。
     def run_request(self, yaml_path, api_name, **kwargs):
         project_root = Path(__file__).resolve().parents[3]
         project_path = str(project_root / "api_yaml" / yaml_path)

@@ -54,6 +54,7 @@ class ProjExport(BaseApi):
         return export_words
 
     @classmethod
+    # 把项目字幕数据转换成导出接口要求的 subtitleJson 结构。
     def build_export_subtitle_json(cls, subtitle_data):
         payload = subtitle_data.get("data", {}) if isinstance(subtitle_data, dict) else {}
         ori_list = payload.get("oriList", [])
@@ -91,6 +92,7 @@ class ProjExport(BaseApi):
 
         return export_items
 
+    # 从项目详情中提取 sessionId，供导出进度查询使用。
     def get_project_session_id(self, project_id, cookie=None):
         detail_status, detail_data = ProjCreate().get_project_detail(project_id, cookie=cookie)
         if detail_status != 200 or detail_data.get("success") is not True:
@@ -110,6 +112,7 @@ class ProjExport(BaseApi):
 
         return [200, session_id, detail_data]
 
+    # 发起项目视频导出任务。
     def export_backend(
         self,
         project_id,
@@ -144,6 +147,7 @@ class ProjExport(BaseApi):
             logger.error(f"export_backend failed: {e}")
             return [None, {"error": "export_backend_failed", "message": str(e)}]
 
+    # 查询导出任务进度。
     def get_export_progress(self, project_id, session_id, version=DEFAULT_EXPORT_VERSION, cookie=None):
         if not session_id:
             raise ValueError("session_id is required")
@@ -161,6 +165,7 @@ class ProjExport(BaseApi):
             logger.error(f"get_export_progress failed: {e}")
             return [None, {"error": "get_export_progress_failed", "message": str(e)}]
 
+    # 轮询导出进度，直到导出完成为止。
     def wait_for_export_completed(
         self,
         project_id,

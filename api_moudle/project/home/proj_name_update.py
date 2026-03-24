@@ -3,6 +3,7 @@ from common.logger import logger
 
 
 class ProjUpdate(BaseApi):
+    # 修改指定项目的项目名称。
     def update_project_name(self, project_id, name, cookie=None):
         try:
             return self.run_authed_request(

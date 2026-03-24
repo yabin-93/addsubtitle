@@ -50,6 +50,7 @@ class Timeline(BaseApi):
             return actual_start_time == expected_start_time
 
     @classmethod
+    # 根据现有视频轨信息构造 updateVideo 接口需要的单条数据。
     def build_update_video_item(cls, video_detail, visible):
         return {
             "id": video_detail.get("id", 0),
@@ -75,6 +76,7 @@ class Timeline(BaseApi):
         )
 
     @classmethod
+    # 根据现有字幕构造拖拽时间线后的 batchEditSubtitle 请求体。
     def build_drag_subtitle_item(cls, subtitle_item, start_time, subtitle_type=None):
         drag_item = ProjSubtitle.build_batch_edit_item(
             subtitle_item,
@@ -86,6 +88,7 @@ class Timeline(BaseApi):
         drag_item["isTranslating"] = subtitle_item.get("isTranslating", False)
         return drag_item
 
+    # 从项目详情中提取 sessionId，供时间线编辑接口使用。
     def get_project_session_id(self, project_id, cookie=None):
         detail_status, detail_data = ProjCreate().get_project_detail(project_id, cookie=cookie)
         if detail_status != 200 or detail_data.get("success") is not True:
@@ -105,12 +108,15 @@ class Timeline(BaseApi):
 
         return [200, session_id, detail_data]
 
+    # 获取项目媒体源数据，常用于读取视频轨道信息。
     def get_project_source(self, project_id, cookie=None):
         return ProjCreate().get_project_source(project_id, cookie=cookie)
 
+    # 获取项目字幕数据，常用于读取时间线上的字幕起始时间。
     def get_project_subtitle(self, project_id, cookie=None):
         return ProjSubtitle().get_project_subtitle(project_id, cookie=cookie)
 
+    # 更新时间线中的视频轨信息，例如显示/隐藏、音量、开始时间等。
     def update_video(self, project_id, video_list, session_id=None, cookie=None):
         try:
             if session_id is None:
@@ -140,6 +146,7 @@ class Timeline(BaseApi):
             logger.error(f"update_video failed: {exc}")
             return [None, {"error": "update_video_failed", "message": str(exc)}]
 
+    # 拖拽字幕时间线位置，本质上是提交带新 startTime 的批量字幕编辑请求。
     def drag_subtitle(self, project_id, subtitle_list, session_id=None, cookie=None):
         if not subtitle_list:
             raise ValueError("subtitle_list cannot be empty")
@@ -172,6 +179,7 @@ class Timeline(BaseApi):
             logger.error(f"drag_subtitle failed: {exc}")
             return [None, {"error": "drag_subtitle_failed", "message": str(exc)}]
 
+    # 轮询项目媒体源，等待视频轨显隐状态更新完成。
     def wait_for_video_visible_updated(self, project_id, visible, video_id=0, cookie=None, timeout=30, interval=2):
         deadline = time.time() + timeout
         latest_response = None
@@ -189,6 +197,7 @@ class Timeline(BaseApi):
 
         return [408, {"stage": "wait_for_video_visible_updated", "latest": latest_response}]
 
+    # 轮询项目字幕，等待指定字幕的开始时间更新完成。
     def wait_for_subtitle_start_time_updated(
         self,
         project_id,

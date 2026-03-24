@@ -5,6 +5,7 @@ from common.yaml_util import read_yaml, write_yaml
 
 
 class Login(BaseApi):
+    # 获取邮箱验证码，供后续验证码登录使用。
     def get_code(self, email):
         try:
             logger.info(f"开始获取验证码，邮箱: {email}")
@@ -19,6 +20,7 @@ class Login(BaseApi):
             logger.error(f"获取验证码失败，邮箱: {email}，错误: {e}")
             return [None, {"error": "get_code_failed", "message": str(e)}]
 
+    # 使用邮箱和验证码登录，并把 token/cookie 持久化到本地 YAML。
     def acc_pwd_login(self, code, email=None):
         login_email = email or read_yaml("email", default=ADD_SUBTITLE_LOGIN_EMAIL)
         try:

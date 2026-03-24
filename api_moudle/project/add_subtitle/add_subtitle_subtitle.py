@@ -109,6 +109,7 @@ class ProjSubtitle(BaseApi):
         }
 
     @classmethod
+    # 根据前一条字幕构造“新增字幕”接口所需的请求体。
     def build_add_subtitle_payload(
         cls,
         previous_subtitle_item,
@@ -178,6 +179,7 @@ class ProjSubtitle(BaseApi):
         return built_segments
 
     @classmethod
+    # 基于已有字幕构造 batchEditSubtitle 接口需要的单条编辑数据。
     def build_batch_edit_item(cls, subtitle_item, edited_texts=None, subtitle_type=None):
         api_subtitle_type = cls.normalize_subtitle_type(
             subtitle_item.get("subtitleType") if subtitle_type is None else subtitle_type
@@ -296,6 +298,7 @@ class ProjSubtitle(BaseApi):
         return all(style_payload.get(key) == value for key, value in expected_fields.items())
 
     @classmethod
+    # 基于已有样式构造 batchStyle 接口需要的单条样式数据。
     def build_batch_style_item(cls, style_item, style_updates=None, subtitle_arr_id=None, replace_style=False):
         if not isinstance(style_item, dict) or not isinstance(style_item.get("style"), dict):
             raise ValueError("style_item must contain a style dict")
@@ -316,6 +319,7 @@ class ProjSubtitle(BaseApi):
             "style": style_payload,
         }
 
+    # 获取项目字幕列表，返回原文轨和译文轨的完整字幕数据。
     def get_project_subtitle(self, project_id, cookie=None):
         try:
             return self.run_authed_request(
@@ -328,6 +332,7 @@ class ProjSubtitle(BaseApi):
             logger.error(f"获取项目字幕失败，错误: {e}")
             return [None, {"error": "get_project_subtitle_failed", "message": str(e)}]
 
+    # 按 subtitleArrId 批量查询指定字幕，常用于校验新增、翻译或删除结果。
     def get_subtitle_by_arr_ids(self, project_id, arr_ids, cookie=None):
         try:
             return self.run_authed_request(
@@ -341,6 +346,7 @@ class ProjSubtitle(BaseApi):
             logger.error(f"按字幕分组 ID 获取字幕失败，错误: {e}")
             return [None, {"error": "get_subtitle_by_arr_ids_failed", "message": str(e)}]
 
+    # 从项目详情中提取 sessionId，供需要编辑态的接口复用。
     def get_project_session_id(self, project_id, cookie=None):
         detail_status, detail_data = ProjCreate().get_project_detail(project_id, cookie=cookie)
         if detail_status != 200 or detail_data.get("success") is not True:
@@ -360,7 +366,7 @@ class ProjSubtitle(BaseApi):
 
         return [200, session_id, detail_data]
 
-    # 批量编辑字幕
+    # 批量编辑字幕内容，可更新原文或译文分段文本。
     def batch_edit_subtitle(self, project_id, subtitle_list, session_id=None, cookie=None):
         try:
             if session_id is None:
@@ -390,6 +396,7 @@ class ProjSubtitle(BaseApi):
             logger.error(f"批量编辑字幕失败，错误: {e}")
             return [None, {"error": "batch_edit_subtitle_failed", "message": str(e)}]
 
+    # 批量修改字幕样式，如字体、字号、粗体、斜体等。
     def batch_style(self, project_id, subtitle_type, style_list, session_id=None, cookie=None):
         api_subtitle_type = self.normalize_subtitle_type(subtitle_type)
         if not style_list:
@@ -424,6 +431,7 @@ class ProjSubtitle(BaseApi):
             logger.error(f"batch_style failed: {e}")
             return [None, {"error": "batch_style_failed", "message": str(e)}]
 
+    # 新增一条字幕，需指定插入位置、开始时间和原文/译文分段数据。
     def add_new_subtitle(
         self,
         project_id,
@@ -468,7 +476,7 @@ class ProjSubtitle(BaseApi):
         except Exception as e:
             logger.error(f"新增字幕失败，错误: {e}")
             return [None, {"error": "add_new_subtitle_failed", "message": str(e)}]
-    # 字幕批量翻译
+    # 触发指定字幕的批量翻译任务。
     def subtitle_batch_translate(self, project_id, arr_ids, session_id=None, cookie=None):
         try:
             if session_id is None:
@@ -497,7 +505,7 @@ class ProjSubtitle(BaseApi):
         except Exception as e:
             logger.error(f"触发字幕翻译失败，错误: {e}")
             return [None, {"error": "subtitle_batch_translate_failed", "message": str(e)}]
-    # 删除字幕框
+    # 删除指定 subtitleArrId 对应的字幕。
     def delete_subtitle(self, project_id, subtitle_arr_id, session_id=None, cookie=None):
         try:
             if session_id is None:
@@ -527,6 +535,7 @@ class ProjSubtitle(BaseApi):
             logger.error(f"删除字幕失败，错误: {e}")
             return [None, {"error": "delete_subtitle_failed", "message": str(e)}]
 
+    # 更新字幕显示模式，例如仅原文、仅译文或双语显示。
     def update_subtitle_show(self, project_id, subtitle_show_enum, cookie=None):
         api_subtitle_show_enum = self.normalize_subtitle_show_enum(subtitle_show_enum)
         try:
@@ -541,6 +550,7 @@ class ProjSubtitle(BaseApi):
             logger.error(f"切换字幕显示状态失败，错误: {e}")
             return [None, {"error": "update_subtitle_show_failed", "message": str(e)}]
 
+    # 轮询项目详情，等待字幕显示模式更新完成。
     def wait_for_subtitle_show_updated(self, project_id, subtitle_show_enum, cookie=None, timeout=30, interval=2):
         expected_subtitle_show = self.normalize_subtitle_show_enum(subtitle_show_enum)
         deadline = time.time() + timeout
@@ -563,6 +573,7 @@ class ProjSubtitle(BaseApi):
 
         return [408, {"stage": "wait_for_subtitle_show_updated", "latest": latest_response}]
 
+    # 更新项目画幅比例。
     def update_project_aspect(self, project_id, aspect_type, session_id=None, cookie=None):
         api_aspect_type = self.normalize_aspect_type(aspect_type)
         try:
@@ -615,6 +626,7 @@ class ProjSubtitle(BaseApi):
             logger.error(f"update_project_aspect failed: {e}")
             return [None, {"error": "update_project_aspect_failed", "message": str(e)}]
 
+    # 轮询项目详情，等待画幅比例更新完成。
     def wait_for_project_aspect_updated(self, project_id, aspect_type, cookie=None, timeout=30, interval=2):
         expected_aspect_type = self.normalize_aspect_type(aspect_type)
         deadline = time.time() + timeout
@@ -636,6 +648,7 @@ class ProjSubtitle(BaseApi):
 
         return [408, {"stage": "wait_for_project_aspect_updated", "latest": latest_response}]
 
+    # 更新项目背景素材。
     def update_project_background(self, project_id, background_id, session_id=None, cookie=None):
         api_background_id = self.normalize_background_id(background_id)
         try:
@@ -688,6 +701,7 @@ class ProjSubtitle(BaseApi):
             logger.error(f"update_project_background failed: {e}")
             return [None, {"error": "update_project_background_failed", "message": str(e)}]
 
+    # 轮询项目详情，等待背景更新完成。
     def wait_for_project_background_updated(self, project_id, background_id, cookie=None, timeout=30, interval=2):
         expected_background_id = self.normalize_background_id(background_id)
         deadline = time.time() + timeout
@@ -709,6 +723,7 @@ class ProjSubtitle(BaseApi):
 
         return [408, {"stage": "wait_for_project_background_updated", "latest": latest_response}]
 
+    # 更新项目每行字幕字数上限。
     def update_char_num(self, project_id, char_num, cookie=None):
         api_char_num = self.normalize_char_num(char_num)
         try:
@@ -723,6 +738,7 @@ class ProjSubtitle(BaseApi):
             logger.error(f"update_char_num failed: {e}")
             return [None, {"error": "update_char_num_failed", "message": str(e)}]
 
+    # 轮询样式接口，等待指定字幕的样式字段更新完成。
     def wait_for_style_updated(
         self,
         project_id,
@@ -762,6 +778,7 @@ class ProjSubtitle(BaseApi):
 
         return [408, {"stage": "wait_for_style_updated", "latest": latest_response}]
 
+    # 轮询项目详情，等待每行字数配置更新完成。
     def wait_for_char_num_updated(self, project_id, char_num, cookie=None, timeout=30, interval=2):
         expected_char_num = self.normalize_char_num(char_num)
         deadline = time.time() + timeout
@@ -781,6 +798,7 @@ class ProjSubtitle(BaseApi):
 
         return [408, {"stage": "wait_for_char_num_updated", "latest": latest_response}]
 
+    # 轮询字幕列表，等待指定字幕文本更新完成。
     def wait_for_subtitle_text_updated(
         self,
         project_id,
@@ -811,6 +829,7 @@ class ProjSubtitle(BaseApi):
 
         return [408, {"stage": "wait_for_subtitle_text_updated", "latest": latest_response}]
 
+    # 轮询字幕查询接口，等待新增字幕在原文轨和译文轨中都可见。
     def wait_for_subtitle_created(
         self,
         project_id,
@@ -848,6 +867,7 @@ class ProjSubtitle(BaseApi):
 
         return [408, {"stage": "wait_for_subtitle_created", "latest": latest_response}]
 
+    # 轮询字幕列表，等待指定字幕被彻底删除。
     def wait_for_subtitle_deleted(
         self,
         project_id,
@@ -881,6 +901,7 @@ class ProjSubtitle(BaseApi):
 
         return [408, {"stage": "wait_for_subtitle_deleted", "latest": latest_response}]
 
+    # 轮询翻译结果，等待指定字幕的译文生成完成。
     def wait_for_translation_result(
         self,
         project_id,
@@ -937,6 +958,7 @@ class ProjSubtitle(BaseApi):
 
         return [408, {"stage": "wait_for_translation_result", "latest": latest_response}]
 
+    # 轮询项目字幕，等待原文轨和译文轨都生成完成。
     def wait_for_project_subtitle_ready(self, project_id, cookie=None, timeout=90, interval=3):
         deadline = time.time() + timeout
         latest_response = None

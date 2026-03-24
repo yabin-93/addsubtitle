@@ -217,6 +217,7 @@ class ProjCreate(BaseApi):
         )
         return audio_path
 
+    # 进入项目编辑态，补发编辑页需要的埋点事件。
     def bootstrap_project_editing(self, project_id, cookie=None):
         result = {}
         for event in ("project_edit", "loading_start"):
@@ -226,6 +227,7 @@ class ProjCreate(BaseApi):
                 return [status_code, result]
         return [200, result]
 
+    # 创建媒体分片上传任务，返回 uploadId 和每个分片的 presigned URL。
     def create_translation_upload_task(self, file_path=None, cookie=None, part_size=None, category="video"):
         file_path = self.resolve_upload_path(category, file_path=file_path)
         return self.run_authed_request(
@@ -305,6 +307,7 @@ class ProjCreate(BaseApi):
 
         return last_response
 
+    # 通知后端视频文件分片上传完成。
     def complete_video_upload(self, project_id, upload_id, completed_parts, z_index=0, cookie=None):
         payload = {
             "upload": {"uploadId": upload_id, "completedParts": completed_parts},
@@ -316,6 +319,7 @@ class ProjCreate(BaseApi):
             cookie=cookie,
         )
 
+    # 通知后端音频文件分片上传完成。
     def complete_audio_upload(self, project_id, upload_id, completed_parts, z_index=0, cookie=None):
         payload = {
             "upload": {"uploadId": upload_id, "completedParts": completed_parts},
@@ -327,6 +331,7 @@ class ProjCreate(BaseApi):
             cookie=cookie,
         )
 
+    # 通知后端缩略图文件分片上传完成。
     def complete_thumbnail_upload(self, project_id, upload_id, completed_parts, cookie=None):
         payload = {"uploadId": upload_id, "completedParts": completed_parts}
         return self._complete_project_file_upload(
@@ -408,6 +413,7 @@ class ProjCreate(BaseApi):
                 {"stage": f"upload_{category}", "error": f"upload_{category}_failed", "message": str(e)},
             ]
 
+    # 完整执行视频上传流程：建任务、上传分片、回调后端。
     def upload_video(self, project_id, file_path=None, z_index=0, cookie=None, part_size=None):
         return self._upload_project_asset(
             project_id=project_id,
@@ -420,6 +426,7 @@ class ProjCreate(BaseApi):
             part_size=part_size,
         )
 
+    # 完整执行音频上传流程：建任务、上传分片、回调后端。
     def upload_audio(self, project_id, file_path=None, z_index=0, cookie=None, part_size=None):
         return self._upload_project_asset(
             project_id=project_id,
@@ -432,6 +439,7 @@ class ProjCreate(BaseApi):
             part_size=part_size,
         )
 
+    # 完整执行缩略图上传流程：建任务、上传分片、回调后端。
     def upload_thumbnail(self, project_id, file_path=None, cookie=None, part_size=None):
         return self._upload_project_asset(
             project_id=project_id,
@@ -443,6 +451,7 @@ class ProjCreate(BaseApi):
             part_size=part_size,
         )
 
+    # 轮询项目状态，等待视频上传结果在项目中生效。
     def wait_for_video_ready(self, project_id, cookie=None, timeout=30, interval=2):
         deadline = time.time() + timeout
         latest_status = None
@@ -476,6 +485,7 @@ class ProjCreate(BaseApi):
             },
         ]
 
+    # 轮询项目媒体状态，等待视频、雪碧图和可选缩略图都可访问。
     def wait_for_project_media_ready(self, project_id, require_thumbnail=False, cookie=None, timeout=60, interval=3):
         deadline = time.time() + timeout
         latest = {}
@@ -558,6 +568,7 @@ class ProjCreate(BaseApi):
 
         return [408, {"stage": "wait_for_project_media_ready", "latest": latest}]
 
+    # 预创建项目，向后端申请 projectId。
     def pre_create_project(
         self,
         duration=30696.78,
@@ -582,6 +593,7 @@ class ProjCreate(BaseApi):
             logger.error(f"pre_create_project failed: {e}")
             return [None, {"error": "pre_create_project_failed", "message": str(e)}]
 
+    # 上报埋点事件，可用于 project_create、project_edit、loading_start 等场景。
     def conform_event(self, event_type, message="", project_id=None, cookie=None):
         try:
             api_name = "event_conform_with_project" if project_id is not None else "event_conform"
@@ -598,6 +610,7 @@ class ProjCreate(BaseApi):
             logger.error(f"conform_event failed: {e}")
             return [None, {"error": "conform_event_failed", "message": str(e)}]
 
+    # 正式创建“加字幕”项目，并设置语种、翻译语种、模式等参数。
     def create_project(
         self,
         name,
@@ -640,6 +653,7 @@ class ProjCreate(BaseApi):
             logger.error(f"create_project failed: {e}")
             return [None, {"error": "create_project_failed", "message": str(e)}]
 
+    # 获取项目详情，常用于读取 sessionId、画幅、背景、字幕显示状态等信息。
     def get_project_detail(self, project_id, cookie=None):
         return self.run_authed_request(
             "project/add_subtitle/add_subtitle_create.yaml",
@@ -648,6 +662,7 @@ class ProjCreate(BaseApi):
             project_id=project_id,
         )
 
+    # 获取项目处理状态，如视频是否上传完成、媒体是否处理完成。
     def get_project_status(self, project_id, cookie=None):
         return self.run_authed_request(
             "project/add_subtitle/add_subtitle_create.yaml",
@@ -656,6 +671,7 @@ class ProjCreate(BaseApi):
             project_id=project_id,
         )
 
+    # 获取项目媒体源信息，如视频地址、轨道信息、雪碧图地址等。
     def get_project_source(self, project_id, cookie=None):
         return self.run_authed_request(
             "project/add_subtitle/add_subtitle_create.yaml",
@@ -664,6 +680,7 @@ class ProjCreate(BaseApi):
             project_id=project_id,
         )
 
+    # 获取项目说话人信息。
     def get_project_speaker_info(self, project_id, cookie=None):
         return self.run_authed_request(
             "project/add_subtitle/add_subtitle_create.yaml",
@@ -672,6 +689,7 @@ class ProjCreate(BaseApi):
             project_id=project_id,
         )
 
+    # 获取项目字幕数据，包含原文轨和译文轨。
     def get_project_subtitle(self, project_id, cookie=None):
         return self.run_authed_request(
             "project/add_subtitle/add_subtitle_create.yaml",
@@ -680,6 +698,7 @@ class ProjCreate(BaseApi):
             project_id=project_id,
         )
 
+    # 获取项目字幕样式配置。
     def get_project_style(self, project_id, cookie=None):
         return self.run_authed_request(
             "project/add_subtitle/add_subtitle_create.yaml",
@@ -688,6 +707,7 @@ class ProjCreate(BaseApi):
             project_id=project_id,
         )
 
+    # 更新项目每行字幕字数上限。
     def update_char_num(self, project_id, char_num=60, cookie=None):
         return self.run_authed_request(
             "project/add_subtitle/add_subtitle_create.yaml",
@@ -697,6 +717,7 @@ class ProjCreate(BaseApi):
             char_num=char_num,
         )
 
+    # 一键执行建项目主流程：预创建、正式创建、上传视频/音频/封面并等待媒体就绪。
     def create_project_flow(self, name=None, cookie=None, video_path=None, image_path=None, audio_path=None):
         project_name = self.build_project_name(name=name, video_path=video_path)
         pre_status, pre_data = self.pre_create_project(cookie=cookie)
