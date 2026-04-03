@@ -16,6 +16,7 @@ REGRESSION_MARK_EXPRESSION = "P0"
 ORDERED_TEST_FILES = [
     "test_case/auth/test_login.py",
     "test_case/project/add_subtitle/test_add_subtitle_create.py",
+    "test_case/project/translate/test_translate_create.py",
     "test_case/project/add_subtitle/test_add_subtitle_subtitle.py",
     "test_case/project/add_subtitle/test_add_subtitle_timeline.py",
     "test_case/project/home/test_proj_list.py",

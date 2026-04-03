@@ -27,6 +27,7 @@ from common.yaml_util import write_yaml
 
 class ProjCreate(BaseApi):
     DEFAULT_DEVICE = "Mozilla/5.0 (Windows NT 10.0; Win64; x64)"
+    CUSTOM_VIDEO_PATH = None  # e.g. r"E:\proj\test_data\upload_files\video\bbc.mp4"
     DEFAULT_UPLOAD_PART_SIZE = 5 * 1024 * 1024
     DEFAULT_UPLOAD_RETRY_COUNT = 3
     DEFAULT_UPLOAD_RETRY_DELAY = 2
@@ -38,8 +39,10 @@ class ProjCreate(BaseApi):
     DEFAULT_AUDIO_FILE_NAME = DEFAULT_AUDIO_FILE_NAME
     DEFAULT_IMAGE_FILE_NAME = DEFAULT_IMAGE_FILE_NAME
 
-    @staticmethod
-    def get_default_video_path():
+    @classmethod
+    def get_default_video_path(cls):
+        if cls.CUSTOM_VIDEO_PATH:
+            return cls.resolve_video_path(cls.CUSTOM_VIDEO_PATH)
         return get_default_video_path()
 
     @staticmethod

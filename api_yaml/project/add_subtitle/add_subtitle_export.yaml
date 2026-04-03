@@ -10,6 +10,26 @@ export_backend:
   headers:
     Cookie: $cookie
 
+project_point:
+  api: /api/project/$project_id/projectPoint
+  method: post
+  json:
+    sessionId: $session_id
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie
+    authorization: $authorization
+
+export_front:
+  api: /api/project/$project_id/exportFront
+  method: post
+  json:
+    sessionId: $session_id
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie
+    authorization: $authorization
+
 get_export_progress:
   api: /api/project/$project_id/exportProgress
   method: get

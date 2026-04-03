@@ -3,7 +3,9 @@ import time
 
 from api_moudle.project.add_subtitle.add_subtitle_create import ProjCreate
 from api_moudle.project.home.base_api import BaseApi
+from common.auth_util import get_cookie
 from common.logger import logger
+from common.yaml_util import read_yaml
 
 
 class ProjExport(BaseApi):
@@ -54,7 +56,6 @@ class ProjExport(BaseApi):
         return export_words
 
     @classmethod
-    # 把项目字幕数据转换成导出接口要求的 subtitleJson 结构。
     def build_export_subtitle_json(cls, subtitle_data):
         payload = subtitle_data.get("data", {}) if isinstance(subtitle_data, dict) else {}
         ori_list = payload.get("oriList", [])
@@ -92,7 +93,6 @@ class ProjExport(BaseApi):
 
         return export_items
 
-    # 从项目详情中提取 sessionId，供导出进度查询使用。
     def get_project_session_id(self, project_id, cookie=None):
         detail_status, detail_data = ProjCreate().get_project_detail(project_id, cookie=cookie)
         if detail_status != 200 or detail_data.get("success") is not True:
@@ -112,9 +112,22 @@ class ProjExport(BaseApi):
 
         return [200, session_id, detail_data]
 
-    # 发起项目视频导出任务。
-    def export_backend(
+    @staticmethod
+    def _extract_token_from_cookie(cookie):
+        if not cookie or "talecast_token=" not in cookie:
+            return None
+        return cookie.split("talecast_token=", 1)[1].split(";", 1)[0]
+
+    def _resolve_frontend_auth(self, cookie=None, force_refresh=False):
+        active_cookie = cookie or get_cookie(force_refresh=force_refresh)
+        token = read_yaml("token", default=None) or self._extract_token_from_cookie(active_cookie)
+        if token is None and cookie is None and not force_refresh:
+            return self._resolve_frontend_auth(cookie=None, force_refresh=True)
+        return active_cookie, f"Bearer {token}" if token else None
+
+    def _run_export_request(
         self,
+        api_name,
         project_id,
         subtitle_json,
         resolution=DEFAULT_EXPORT_RESOLUTION,
@@ -126,28 +139,132 @@ class ProjExport(BaseApi):
         if not subtitle_json:
             raise ValueError("subtitle_json cannot be empty")
 
-        try:
-            subtitle_json_payload = (
-                subtitle_json
-                if isinstance(subtitle_json, str)
-                else json_lib.dumps(subtitle_json, ensure_ascii=False)
-            )
-            return self.run_authed_request(
+        subtitle_json_payload = (
+            subtitle_json
+            if isinstance(subtitle_json, str)
+            else json_lib.dumps(subtitle_json, ensure_ascii=False)
+        )
+        return self.run_authed_request(
+            "project/add_subtitle/add_subtitle_export.yaml",
+            api_name,
+            cookie=cookie,
+            project_id=project_id,
+            subtitle_json=subtitle_json_payload,
+            export_headers=export_headers,
+            resolution=int(resolution),
+            lip_sync=bool(lip_sync),
+            device_type=device_type,
+        )
+
+    def _run_frontend_request(self, api_name, project_id, session_id, cookie=None):
+        provided_cookie = cookie is not None
+        active_cookie, authorization = self._resolve_frontend_auth(cookie=cookie, force_refresh=False)
+        response = self.run_request(
+            "project/add_subtitle/add_subtitle_export.yaml",
+            api_name,
+            project_id=project_id,
+            session_id=session_id,
+            cookie=active_cookie,
+            authorization=authorization,
+        )
+
+        if not provided_cookie and response and response[0] == 401:
+            active_cookie, authorization = self._resolve_frontend_auth(cookie=None, force_refresh=True)
+            response = self.run_request(
                 "project/add_subtitle/add_subtitle_export.yaml",
-                "export_backend",
-                cookie=cookie,
+                api_name,
                 project_id=project_id,
-                subtitle_json=subtitle_json_payload,
-                export_headers=export_headers,
-                resolution=int(resolution),
-                lip_sync=bool(lip_sync),
+                session_id=session_id,
+                cookie=active_cookie,
+                authorization=authorization,
+            )
+
+        return response
+
+    def export_backend(
+        self,
+        project_id,
+        subtitle_json,
+        resolution=DEFAULT_EXPORT_RESOLUTION,
+        lip_sync=False,
+        device_type=DEFAULT_EXPORT_DEVICE_TYPE,
+        export_headers=DEFAULT_EXPORT_HEADERS,
+        cookie=None,
+    ):
+        try:
+            return self._run_export_request(
+                "export_backend",
+                project_id=project_id,
+                subtitle_json=subtitle_json,
+                resolution=resolution,
+                lip_sync=lip_sync,
                 device_type=device_type,
+                export_headers=export_headers,
+                cookie=cookie,
             )
         except Exception as e:
             logger.error(f"export_backend failed: {e}")
             return [None, {"error": "export_backend_failed", "message": str(e)}]
 
-    # 查询导出任务进度。
+    def project_point(self, project_id, session_id, cookie=None):
+        try:
+            return self._run_frontend_request(
+                "project_point",
+                project_id=project_id,
+                session_id=session_id,
+                cookie=cookie,
+            )
+        except Exception as e:
+            logger.error(f"project_point failed: {e}")
+            return [None, {"error": "project_point_failed", "message": str(e)}]
+
+    def export_front(self, project_id, session_id, cookie=None):
+        try:
+            return self._run_frontend_request(
+                "export_front",
+                project_id=project_id,
+                session_id=session_id,
+                cookie=cookie,
+            )
+        except Exception as e:
+            logger.error(f"export_front failed: {e}")
+            return [None, {"error": "export_front_failed", "message": str(e)}]
+
+    def export_frontend(self, project_id, session_id=None, cookie=None, send_export_click=True):
+        if session_id is None:
+            session_status, session_id, session_data = self.get_project_session_id(project_id, cookie=cookie)
+            if session_status != 200 or not session_id:
+                return [
+                    session_status,
+                    {
+                        "error": "export_frontend_failed",
+                        "message": "project sessionId not found",
+                        "data": session_data,
+                    },
+                ]
+
+        point_status, point_data = self.project_point(project_id, session_id=session_id, cookie=cookie)
+        result = {
+            "sessionId": session_id,
+            "projectPoint": {"status_code": point_status, "data": point_data},
+        }
+        if point_status != 200 or (isinstance(point_data, dict) and point_data.get("success") is False):
+            return [point_status, result]
+
+        event_status = None
+        event_data = None
+        if send_export_click:
+            event_status, event_data = ProjCreate().conform_event(
+                "export_click",
+                project_id=project_id,
+                cookie=cookie,
+            )
+            result["eventConform"] = {"status_code": event_status, "data": event_data}
+
+        export_status, export_data = self.export_front(project_id, session_id=session_id, cookie=cookie)
+        result["exportFront"] = {"status_code": export_status, "data": export_data}
+        return [export_status, result]
+
     def get_export_progress(self, project_id, session_id, version=DEFAULT_EXPORT_VERSION, cookie=None):
         if not session_id:
             raise ValueError("session_id is required")
@@ -165,7 +282,6 @@ class ProjExport(BaseApi):
             logger.error(f"get_export_progress failed: {e}")
             return [None, {"error": "get_export_progress_failed", "message": str(e)}]
 
-    # 轮询导出进度，直到导出完成为止。
     def wait_for_export_completed(
         self,
         project_id,
