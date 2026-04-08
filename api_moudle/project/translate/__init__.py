@@ -1,2 +1,2 @@
 from api_moudle.project.translate.translate_create import TranslateCreate
-
+from api_moudle.project.translate.translate_sentence import TranslateSentence

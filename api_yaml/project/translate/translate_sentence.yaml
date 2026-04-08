@@ -1,0 +1,7 @@
+get_project_sentence_list:
+  api: /api/project/$project_id/sentenceList
+  method: get
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie
+

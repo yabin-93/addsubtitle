@@ -2,10 +2,34 @@ import allure
 import pytest
 
 from api_moudle.project.translate.translate_create import TranslateCreate
+from common.yaml_util import read_yaml
 
 
 @allure.epic("Translate")
 class TestTranslateCreate:
+    @staticmethod
+    def _get_or_create_target_project_id():
+        api = TranslateCreate()
+
+        for key in ("translate_test_project_id", "translate_created_project_id"):
+            project_id = read_yaml(key, default=None)
+            if project_id is None:
+                continue
+
+            status_code, data = api.get_project_speaker_info(project_id)
+            if status_code == 200 and data.get("success") is True:
+                return project_id
+
+        try:
+            video_path = api.get_default_video_path()
+        except FileNotFoundError as exc:
+            pytest.skip(str(exc))
+
+        status_code, flow_data = api.create_project_flow(video_path=video_path)
+        assert status_code == 200
+        assert flow_data["create"]["success"] is True
+        return flow_data["projectId"]
+
     @allure.feature("Create Video")
     @allure.story("Upload Translation Project Video From upload_files")
     @allure.title("Create Translation Project And Upload Video From upload_files")
@@ -45,3 +69,17 @@ class TestTranslateCreate:
         assert detail_status == 200
         assert detail_data["success"] is True
         assert detail_data["data"]["name"] == project_name
+
+    @allure.feature("Speaker Info")
+    @allure.story("Get Translation Project Speaker Info")
+    @allure.title("Get Translation Project Speaker Info")
+    @pytest.mark.P0
+    def test_get_translation_project_speaker_info(self):
+        api = TranslateCreate()
+        project_id = self._get_or_create_target_project_id()
+
+        status_code, data = api.get_project_speaker_info(project_id)
+        assert status_code == 200
+        assert data["success"] is True
+        assert data["code"] == 0
+        assert isinstance(data.get("data"), list)
