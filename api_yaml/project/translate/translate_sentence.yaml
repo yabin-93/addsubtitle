@@ -5,3 +5,32 @@ get_project_sentence_list:
     Content-Type: application/json
     Cookie: $cookie
 
+get_project_sentence_detail:
+  api: /api/project/$project_id/batchDetail
+  method: post
+  json:
+    sentenceIds: $sentence_ids
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie
+
+batch_edit_sentence:
+  api: /api/project/$project_id/batchEditSentence
+  method: post
+  json:
+    sessionId: $session_id
+    sentenceList: $sentence_list
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie
+
+single_tts:
+  api: /api/project/$project_id/singleTts
+  method: post
+  json:
+    sessionId: $session_id
+    sentenceId: $sentence_id
+    text: $text
+  headers:
+    Content-Type: application/json
+    Cookie: $cookie

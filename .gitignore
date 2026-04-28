@@ -7,6 +7,8 @@ __pycache__/
 .pytest_cache/
 allure-results/
 reports/
+allure-report/
+.report_server.json
 junit.xml
 extract.yaml
 common/Logs/

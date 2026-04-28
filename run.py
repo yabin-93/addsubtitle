@@ -133,8 +133,28 @@ def _send_dingtalk_report(exit_code, report_generated):
         print(f"Failed to send DingTalk message: {exc}")
 
 
+def _print_report_open_hint(report_generated):
+    if not report_generated:
+        return
+
+    print(f"Allure report directory: {Path('reports').resolve()}")
+    print(f"Open the report with: {sys.executable} open_report.py")
+
+
+def _open_allure_report(report_generated):
+    if not report_generated or not _is_truthy(os.getenv("OPEN_ALLURE_REPORT")):
+        return
+
+    try:
+        subprocess.Popen([sys.executable, "open_report.py"])
+    except Exception as exc:
+        print(f"Failed to launch report viewer: {exc}")
+
+
 if __name__ == "__main__":
     exit_code = pytest.main(_build_pytest_args())
     report_generated = _generate_allure_report()
     _send_dingtalk_report(exit_code, report_generated)
+    _print_report_open_hint(report_generated)
+    _open_allure_report(report_generated)
     sys.exit(exit_code)
